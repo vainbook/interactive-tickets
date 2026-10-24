@@ -1,0 +1,1873 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="兩個人用同一支手機各自滑門票作答，都想要的事就是你們的共識。">
+<style>:root{color-scheme:light;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>互動門票</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&family=Huninn&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600&display=swap">
+<style>
+/* Layout: a ticket counter on a cutting mat. Play view = two mirrored halves, each holding one swipeable ticket;
+   the strip between them is a punch card (集點卡). Ticket faces keep their own paper colours in both themes. */
+:root{
+  --desk:#D5DBD7; --desk-2:#C9D0CC; --fg:#1F2422; --muted:#56605A; --line:#1F2422; --card:#FFFDF8;
+  --a:#D63A2F; --b:#2457C5; --ok:#1C8648; --amber:#C27410; --void:#7A827E;
+  --display:"Huninn","Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --body:"Noto Sans TC","PingFang TC",system-ui,-apple-system,sans-serif;
+  --serif:"Noto Serif TC","Songti TC",serif;
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --desk:#191D1B; --desk-2:#222825; --fg:#ECEFEA; --muted:#9AA39D; --line:#ECEFEA; --card:#252A28; --void:#8E9692; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#191D1B; --desk-2:#222825; --fg:#ECEFEA; --muted:#9AA39D; --line:#ECEFEA; --card:#252A28; --void:#8E9692; color-scheme:dark}
+
+html,body{height:100%}
+body{background-color:var(--desk);background-image:repeating-linear-gradient(0deg,transparent 0 23px,var(--desk-2) 23px 24px),repeating-linear-gradient(90deg,transparent 0 23px,var(--desk-2) 23px 24px);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:disabled{cursor:default;opacity:.5}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+
+.screen{height:100%;box-sizing:border-box;overflow-y:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 40px}
+.wrap{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
+.meta{font-size:.82rem;color:var(--muted)}
+.lab{display:block;font-size:.78rem;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
+
+/* ---------- tickets: a solid card with big, clear text; the stub on the right carries the ticket-type details ---------- */
+.tkw{position:relative;width:100%;max-width:360px;font-size:17px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.12)) drop-shadow(0 12px 14px rgba(0,0,0,.18));transform:rotate(var(--tilt,0deg))}
+.tk{position:relative;box-sizing:border-box;display:flex;min-height:9.2em;background:var(--t-bg);color:var(--t-fg);border-radius:12px;overflow:hidden;--nx:4.4em}
+.notch{-webkit-mask:radial-gradient(circle at calc(100% - var(--nx)) 0,#0000 .6em,#000 calc(.6em + .5px)) top/100% 51% no-repeat,radial-gradient(circle at calc(100% - var(--nx)) 100%,#0000 .6em,#000 calc(.6em + .5px)) bottom/100% 51% no-repeat;mask:radial-gradient(circle at calc(100% - var(--nx)) 0,#0000 .6em,#000 calc(.6em + .5px)) top/100% 51% no-repeat,radial-gradient(circle at calc(100% - var(--nx)) 100%,#0000 .6em,#000 calc(.6em + .5px)) bottom/100% 51% no-repeat}
+.tk .main{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:.45em;padding:1em .9em 1em 1.15em}
+.tk-k{font-size:.64em;letter-spacing:.2em;opacity:.72}
+.tk .q{font-family:var(--display);font-size:1.45em;line-height:1.36;margin:0;text-wrap:balance}
+.stub{width:var(--nx);flex:none;box-sizing:border-box;background:var(--s-bg,var(--t-bg));color:var(--s-fg,var(--t-fg));border-left:2px dashed color-mix(in srgb,var(--t-fg) 35%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;text-align:center;padding:.6em .2em}
+.stub small{font-size:.56em;letter-spacing:.14em;opacity:.85;white-space:nowrap}
+.stub b{font-family:var(--mono);font-weight:500;font-size:.9em;line-height:1.1}
+.stub .big{font-family:var(--display);font-size:1.5em;line-height:1.1}
+.stub .lvl{font-size:.62em;letter-spacing:.06em;margin-top:.2em}
+.t-rc{--t-bg:#FFFFFF;--t-fg:#232323;--s-bg:#F1EEE8;--s-fg:#C8352B}
+.t-mv{--t-bg:#A3262A;--t-fg:#FFF3E2;--s-bg:#F2E4C6;--s-fg:#A3262A}
+.t-bp{--t-bg:#1F4E9C;--t-fg:#FFFFFF;--s-bg:#FFFFFF;--s-fg:#1F4E9C}
+.t-tr{--t-bg:#F3D2A6;--t-fg:#4A2810;--s-bg:#4A2810;--s-fg:#F3D2A6}
+.t-am{--t-bg:#FFB8CC;--t-fg:#4A0E25;--s-bg:#FFE8EF;--s-fg:#C2185B}
+.t-cc{--t-bg:#18181E;--t-fg:#FFFFFF;--s-bg:linear-gradient(160deg,#FF9ACB,#FFE27A 35%,#8FF5DC 65%,#A9B4FF);--s-fg:#18181E}
+.t-pc{--t-bg:#FBF6EA;--t-fg:#2B2A28;--s-bg:#FBF6EA;--s-fg:#C8352B}
+.t-pc .main{border-left:.4em solid;border-image:repeating-linear-gradient(-45deg,#C8352B 0 .5em,#FBF6EA .5em 1em,#2A5CB8 1em 1.5em,#FBF6EA 1.5em 2em) 1}
+.t-hk{--t-bg:#1A1A2E;--t-fg:#F3E6C4;--s-bg:#C9A24E;--s-fg:#1A1A2E}
+.pcs{width:1.9em;height:2.2em;background:#E9604A;color:#FFF3E6;display:flex;align-items:center;justify-content:center;outline:.18em dotted var(--t-bg);outline-offset:-.1em}
+
+/* 證書與散場 */
+.t-cert{--t-bg:#FFFBEF;--t-fg:#3A2A10;--t-acc:#B8913E}
+.t-void{--t-bg:#E7E9E8;--t-fg:#3D4441;--t-acc:#7A827E}
+.t-cert.tk,.t-void.tk{display:block;min-height:0;padding:1.1em;text-align:center}
+.t-cert.tk{border:.3em double var(--t-acc)}
+.t-void.tk{border:2px dashed #9AA19D}
+.t-cert .q,.t-void .q{font-size:1.5em}
+.cert-k{font-size:.7em;letter-spacing:.3em;color:var(--t-acc)}
+.cert-list{list-style:none;margin:.5em 0 0;padding:0;font-size:.82em;display:flex;flex-direction:column;gap:.2em}
+
+/* ink stamps */
+.ink{position:absolute;left:50%;top:44%;z-index:3;padding:.15em .6em;font-family:var(--display);font-size:1.6em;letter-spacing:.08em;border:.14em solid currentColor;border-radius:.35em;transform:translate(-50%,-50%) rotate(-14deg);opacity:0;pointer-events:none;background:color-mix(in srgb,currentColor 8%,transparent);white-space:nowrap}
+.ink.round{border-radius:50%;width:3.6em;height:3.6em;padding:0;display:flex;align-items:center;justify-content:center;border-style:double;border-width:.24em}
+.ink.c-red{color:#D63A2F} .ink.c-blue{color:#2457C5} .ink.c-gray{color:#6F7773} .ink.c-amber{color:#C27410} .ink.c-green{color:#1C8648}
+.t-hk~.ink.c-gray,.t-cc~.ink.c-gray{color:#B9C0BC}
+.t-hk~.ink.c-red,.t-cc~.ink.c-red{color:#FF6F61}
+.t-hk~.ink.c-blue,.t-cc~.ink.c-blue{color:#7FA6FF}
+.ink.on{opacity:.92;animation:thump .32s cubic-bezier(.2,1.6,.5,1)}
+.ink.corner{left:auto;top:-.4em;right:-.4em;font-size:1.1em;transform:rotate(14deg)}
+.ink.corner.on{animation:none}
+.t-mv .stub .num{font-size:.55em}
+@keyframes thump{from{transform:translate(-50%,-50%) rotate(-14deg) scale(1.8);opacity:0}to{transform:translate(-50%,-50%) rotate(-14deg) scale(1);opacity:.92}}
+
+/* ---------- play ---------- */
+.play{height:100%;display:grid;grid-template-rows:1fr auto 1fr;overflow:hidden}
+.half{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:0;overflow:hidden;padding-block:8px;padding-left:max(26px,env(safe-area-inset-left,0px));padding-right:max(26px,env(safe-area-inset-right,0px))}
+#hA{--pc:var(--a);--tilt:-1.2deg}
+#hB{--pc:var(--b);--tilt:1.2deg}
+.face #hB{transform:rotate(180deg)}
+.who{width:100%;max-width:360px;display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.who b{color:var(--pc);font-family:var(--display);font-weight:400;font-size:1rem;letter-spacing:0}
+.tkw[data-card]{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.tkw.back{transition:transform .3s cubic-bezier(.3,1.5,.6,1)}
+.tkw.fly{transition:transform .25s ease-in,opacity .25s ease-in}
+.tkw.down .tk{filter:saturate(.35) brightness(.92)}
+.mini{display:flex;gap:8px}
+.tkw.rv{cursor:pointer}
+.nx{position:relative;width:46px;height:46px;flex:none;border-radius:50%;background:var(--card);color:var(--fg);font-size:1.6rem;line-height:44px;text-align:center}
+.nx svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.nx circle{fill:none;stroke:var(--fg);stroke-width:2.5;stroke-dasharray:126;stroke-dashoffset:126;animation:ring var(--auto,3s) linear forwards}
+@keyframes ring{to{stroke-dashoffset:0}}
+.pk{font-style:normal;font-weight:700;font-size:.95rem;width:1.1em;text-align:center;animation:thump2 .4s cubic-bezier(.2,1.6,.5,1)}
+.pka{color:var(--a)} .pkb{color:var(--b)}
+.hint{position:absolute;z-index:0;font-size:.74rem;letter-spacing:.18em;color:var(--fg);opacity:.32;padding:10px 3px;transition:opacity .15s}
+.hint:active{opacity:.7}
+.h0,.h2{top:50%;transform:translateY(-50%);writing-mode:vertical-rl;text-orientation:upright}
+.h0{left:2px} .h2{right:2px}
+.h1{bottom:0;left:50%;transform:translateX(-50%);letter-spacing:.12em;padding:4px 12px;white-space:nowrap}
+.mb{padding:5px 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-size:.85rem}
+.mb2{background:var(--pc,var(--a));border-color:var(--pc,var(--a));color:#fff}
+.link{font-size:.82rem;color:var(--muted);text-decoration:underline}
+.say{margin:0;text-align:center;font-size:.88rem;max-width:360px}
+.say b{font-family:var(--display);font-weight:400;font-size:1.05rem;margin-right:6px}
+.pa{color:var(--a)} .pb{color:var(--b)}
+.next{background:var(--fg);color:var(--desk);padding:6px 26px;border-radius:999px;font-family:var(--display);font-size:1.02rem}
+.ask{font-family:var(--display);font-size:1.1rem;margin:0;text-align:center}
+.hand{display:flex;gap:10px;justify-content:center;width:100%;max-width:350px}
+.rc{flex:1;min-width:0;min-height:112px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:12px 8px;text-align:center;background:var(--t-bg);color:var(--t-fg);border-radius:8px;outline:1.5px dashed color-mix(in srgb,var(--t-fg) 35%,transparent);outline-offset:-6px;box-shadow:0 10px 16px -10px rgba(0,0,0,.45);transform:rotate(var(--r,0deg));transition:transform .15s}
+.rc:nth-child(1){--r:-6deg} .rc:nth-child(3){--r:6deg}
+.rc:active{transform:translateY(-8px) rotate(var(--r,0deg))}
+.rc small{font-size:.66rem;letter-spacing:.2em;color:var(--t-acc)}
+.rc b{font-family:var(--display);font-weight:400;font-size:1.1rem;line-height:1.3}
+.rc span{font-size:.72rem;opacity:.8}
+
+/* progress strip: symbols only, so both players read it the same way */
+.mid{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:6px;padding-block:4px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));background:linear-gradient(transparent calc(50% - .5px),color-mix(in srgb,var(--fg) 18%,transparent) calc(50% - .5px) calc(50% + .5px),transparent 0)}
+.ic{width:30px;height:30px;border-radius:50%;font-size:.9rem;color:var(--muted);background:var(--desk);border:1px solid color-mix(in srgb,var(--fg) 20%,transparent);flex:none}
+.punch{display:flex;align-items:center;gap:10px;padding:3px 10px;border-radius:999px;background:var(--desk)}
+.slots,.voids{display:flex;gap:5px}
+.slot{width:12px;height:12px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--fg) 30%,transparent);flex:none;font-size:0}
+.slot.on{border-color:var(--a);background:var(--a)}
+.slot.new,.vd.new{animation:thump2 .45s cubic-bezier(.2,1.6,.5,1)}
+.vd{width:8px;height:12px;border-radius:2px;border:1.5px solid color-mix(in srgb,var(--fg) 30%,transparent);flex:none;font-size:0}
+.vd.on{border-color:var(--void);background:linear-gradient(135deg,transparent 42%,var(--desk) 42% 58%,transparent 58%),var(--void)}
+@keyframes thump2{from{transform:scale(2.2)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.ink.on,.slot.on{animation:none}.tkw.back,.tkw.fly{transition:none}}
+@media (max-height:760px){.tkw{font-size:15px}.half{gap:8px}}
+@media (max-height:680px){.tkw{font-size:13.5px}}
+
+/* ---------- home ---------- */
+.hero{--t-bg:#C8352B;--t-fg:#FFF4E4;--t-acc:#FFD9A8;--nx:5.6em;font-size:17px;filter:drop-shadow(0 14px 16px rgba(0,0,0,.22));transform:rotate(-1.5deg);margin-top:6px}
+.hero{display:flex}
+.hero .tk{flex:1;min-width:0;display:flex;--nx:0px;border-radius:12px 0 0 12px}
+.hero>.stub{border-radius:0 12px 12px 0;-webkit-mask:radial-gradient(circle at 0 0,#0000 .6em,#000 calc(.6em + .5px)) top/100% 51% no-repeat,radial-gradient(circle at 0 100%,#0000 .6em,#000 calc(.6em + .5px)) bottom/100% 51% no-repeat;mask:radial-gradient(circle at 0 0,#0000 .6em,#000 calc(.6em + .5px)) top/100% 51% no-repeat,radial-gradient(circle at 0 100%,#0000 .6em,#000 calc(.6em + .5px)) bottom/100% 51% no-repeat}
+.hero .main{flex:1;min-width:0;padding:1.1em 1em 1.1em 1.3em}
+.hero-k{font-family:var(--mono);font-size:.7em;letter-spacing:.22em;color:var(--t-acc)}
+.hero h1{font-family:var(--display);font-weight:400;font-size:2.6em;white-space:nowrap;line-height:1.05;margin:.12em 0 .25em;letter-spacing:.04em}
+.hero p{margin:0;font-size:1em;line-height:1.6}
+.hero-fine{display:block;margin-top:.9em;padding-top:.6em;border-top:1px dashed rgba(255,244,228,.35);font-size:.68em;letter-spacing:.12em;opacity:.8}
+.hero .stub{background:#FFF4E4;color:#C8352B;border-left:2px dashed rgba(200,53,43,.5);gap:.35em}
+.hero .stub b{font-family:var(--display);font-weight:400;font-size:1.35em;line-height:1.2}
+.hero .stub small{font-size:.66em;color:#8A4A3A}
+.hero .stub:disabled{opacity:1;color:#8A4A3A}
+.notice{margin:0;padding:12px 14px;border-radius:10px;background:var(--card);border:1.5px dashed var(--line);font-size:.9rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ghost{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:var(--card);padding:12px;border-radius:12px;font-weight:500}
+.ghost b{font-family:var(--mono);font-weight:500;font-size:.85rem;background:var(--a);color:#fff;border-radius:999px;padding:0 8px}
+.home{min-height:100%;justify-content:center}
+.recent{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px 6px}
+.recent-h{display:flex;justify-content:space-between;align-items:baseline}
+.recent-h .lab{margin:0}
+.ri{display:flex;width:100%;text-align:left;align-items:center;gap:10px;padding:9px 0;border-top:1px dashed color-mix(in srgb,var(--line) 30%,transparent)}
+.ri:first-of-type{border-top:0}
+.ri i{width:.5rem;height:1.6rem;border-radius:3px;background:var(--t-bg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
+.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mode{display:flex;flex-direction:column;gap:3px;padding:10px 10px 9px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);text-align:left}
+.mode b{font-family:var(--display);font-weight:400;font-size:1.15rem;line-height:1.2}
+.mode span{font-size:.72rem;color:var(--muted);line-height:1.4}
+.mode[aria-pressed="true"]{background:var(--fg);color:var(--desk)}
+.mode[aria-pressed="true"] span{color:inherit;opacity:.75}
+.mode.spicy[aria-pressed="true"]{background:#1A1A2E;border-color:#1A1A2E;color:#F3E6C4}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:999px;background:color-mix(in srgb,var(--fg) 10%,transparent)}
+.seg button{padding:7px 4px;border-radius:999px;font-size:.88rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--fg);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.seg-d{margin:6px 0 0;font-size:.78rem;color:var(--muted);text-align:center}
+.hero.go{cursor:pointer;transition:transform .15s}
+.hero.go:active{transform:rotate(-1.5deg) scale(.98)}
+.hero>.stub{transform-origin:0 0}
+.hero.tearing>.stub{animation:tear .6s cubic-bezier(.45,0,.8,.5) forwards}
+@keyframes tear{0%{transform:none}25%{transform:rotate(-7deg)}45%{transform:translate(6px,6px) rotate(-15deg)}100%{transform:translate(46px,150px) rotate(-28deg);opacity:0}}
+.hero.tearing .main{animation:tug .25s ease-out}
+@keyframes tug{30%{transform:translateX(-4px)}100%{transform:none}}
+.cgs{display:flex;flex-direction:column;gap:14px}
+.cg{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.chip.g,.chip.g[aria-pressed]{font-family:var(--display);font-size:1rem;background:none;color:var(--fg);border:0;padding:0}
+.chip.g::after{content:"全選";margin-left:8px;font-family:var(--body);font-size:.72rem;color:var(--muted);text-decoration:underline}
+.chip.g[aria-pressed="true"]::after{content:"全部關閉"}
+.chip.g small{margin-left:6px;font-size:.75em;opacity:.7}
+.chip.s{font-size:.8rem;padding:2px 10px}
+.slot.vx{border-color:var(--void);background:linear-gradient(135deg,transparent 42%,var(--desk) 42% 58%,transparent 58%),var(--void)}
+.slot.nt{border-color:transparent;background:color-mix(in srgb,var(--fg) 28%,transparent)}
+.sum{width:100%;max-width:360px;max-height:100%;min-height:0;display:flex;flex-direction:column;gap:8px}
+.sum-h{display:flex;justify-content:space-between;align-items:baseline}
+.sum-h b{font-family:var(--display);font-weight:400;font-size:1.3rem}
+.sum-h span{font-size:.85rem;color:var(--muted)}
+.sum-l{list-style:none;margin:0;padding:4px 12px;overflow:auto;min-height:0;flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:12px}
+.sum-l li{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:.88rem}
+.sum-l li+li{border-top:1px dashed color-mix(in srgb,var(--line) 30%,transparent)}
+.sum-l i{width:.4rem;height:1.3rem;border-radius:2px;background:var(--t-bg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
+.sum .mini{justify-content:center}
+.play.solo{grid-template-rows:auto 1fr}
+.play.solo #hB{display:none}
+.top-r{display:flex;justify-content:flex-end;margin-bottom:-14px}
+.resume{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-radius:12px;background:var(--fg);color:var(--desk);text-align:left}
+.resume b{display:block;font-family:var(--display);font-weight:400;font-size:1.1rem}
+.resume small{font-size:.78rem;opacity:.8}
+.resume i{font-style:normal;font-size:1.6rem}
+.li-x{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:0 0 12px 3.35rem;font-size:.82rem}
+.li+.li-x{border-top:0}
+.li-x+.li{border-top:1px dashed color-mix(in srgb,var(--line) 30%,transparent)}
+.plan{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.plan input,.memo{font:inherit;color:var(--fg);background:var(--desk);border:1px solid color-mix(in srgb,var(--line) 30%,transparent);border-radius:8px;padding:4px 8px}
+.memo{flex:1;min-width:0}
+.li{position:relative}
+.chk{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none;width:2.6rem}
+.chk small{font-size:.64rem;color:var(--muted);white-space:nowrap}
+.li .chk input{width:22px;height:22px}
+.lf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.lf select{min-width:0;font:inherit;font-size:.82rem;color:var(--fg);background:var(--card);border:1.5px solid color-mix(in srgb,var(--line) 40%,transparent);border-radius:10px;padding:7px 8px}
+.tip{margin:0;padding:10px 14px;border-radius:10px;background:var(--card);border:1.5px dashed color-mix(in srgb,var(--line) 45%,transparent);font-size:.85rem;color:var(--muted)}
+.sec{margin:0;padding:14px 0 4px;font-size:.75rem;letter-spacing:.14em;color:var(--muted);border-top:1.5px dashed color-mix(in srgb,var(--line) 40%,transparent)}
+.li.using .qt{text-decoration:line-through;color:var(--muted)}
+.li.using::after{content:"已使用";position:absolute;right:3.6rem;top:50%;padding:.1em .5em;font-family:var(--display);font-size:1rem;color:var(--a);border:2px solid currentColor;border-radius:6px;transform:translateY(-50%) rotate(-12deg);animation:useStamp .32s cubic-bezier(.2,1.6,.5,1)}
+.li.using,.li-x.using{animation:useLeave .35s ease-in .75s forwards}
+@keyframes useStamp{from{transform:translateY(-50%) rotate(-12deg) scale(1.8);opacity:0}to{transform:translateY(-50%) rotate(-12deg) scale(1);opacity:1}}
+@keyframes useLeave{to{opacity:0;transform:translateY(14px)}}
+@media (prefers-reduced-motion:reduce){.li.using::after{animation:none}.li.using,.li-x.using{animation:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tut{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(15,18,17,.55);padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.tut-card{width:100%;max-width:380px;background:var(--card);color:var(--fg);border-radius:18px;padding:22px 20px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 40px -20px rgba(0,0,0,.5)}
+.tut-card h2{font-size:1.35rem}
+.tut-card p{margin:0;font-size:.92rem;line-height:1.7;color:var(--muted)}
+.tut-art{height:150px;border-radius:12px;background:var(--desk);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;position:relative}
+.tut-dots{display:flex;gap:6px;justify-content:center}
+.tut-dots i{width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--fg) 25%,transparent)}
+.tut-dots i.on{background:var(--fg);width:18px;border-radius:3px}
+.tut-act{display:flex;justify-content:space-between;align-items:center}
+.tp-phone{width:74px;height:126px;border-radius:14px;border:3px solid var(--fg);display:grid;grid-template-rows:1fr 1fr;overflow:hidden}
+.tp-phone i{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:.78rem;font-family:var(--display)}
+.tp-top{background:color-mix(in srgb,var(--b) 25%,transparent);transform:rotate(180deg);border-bottom:1.5px dashed var(--fg)}
+.tp-bot{background:color-mix(in srgb,var(--a) 25%,transparent)}
+.tp-swipe{position:relative;font-size:12px}
+.tp-tk{background:#A3262A;color:#FFF3E2;font-family:var(--display);font-size:1.15em;padding:1.1em 1.4em;border-radius:10px;animation:tpSwipe 2.4s ease-in-out infinite}
+.tp-ink{font-size:1em;animation:tpInk 2.4s ease-in-out infinite}
+.tp-dirs{display:flex;gap:14px;font-size:.75rem;color:var(--muted)}
+@keyframes tpSwipe{0%,20%{transform:none;opacity:1}55%{transform:translateX(70px) rotate(10deg);opacity:1}70%{transform:translateX(120px) rotate(16deg);opacity:0}71%{transform:none;opacity:0}100%{opacity:1}}
+@keyframes tpInk{0%,25%{opacity:0}45%,60%{opacity:.92;transform:translate(-10%,-50%) rotate(-14deg)}70%,100%{opacity:0}}
+.tp-punch{display:flex;align-items:center;gap:6px}
+.tp-punch i{width:16px;height:16px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--fg) 30%,transparent)}
+.tp-punch i.on{background:var(--a);border-color:var(--a)}
+.tp-punch b{margin-left:10px;font-family:var(--display);font-weight:400;color:var(--a);border:2.5px double var(--a);border-radius:50%;width:3.6em;height:3.6em;display:flex;align-items:center;justify-content:center;font-size:.85rem;transform:rotate(-12deg)}
+@media (prefers-reduced-motion:reduce){.tp-tk,.tp-ink{animation:none}.tp-ink{opacity:.9}}
+.kinds{display:flex;gap:6px;flex-wrap:wrap}
+.kind{font-size:.72rem;padding:2px 8px;border-radius:4px;background:var(--t-bg);color:var(--t-fg);letter-spacing:.06em}
+.opts{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:2px 16px}
+.opts>*+*{margin-top:18px}
+.opts[open]{padding-bottom:18px}
+.opts summary{padding:12px 0;align-items:baseline}
+.opts summary .meta{text-align:right;min-width:0}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.names input{width:100%;box-sizing:border-box;padding:9px 12px;border-radius:10px;border:1.5px solid var(--a);background:var(--desk);color:var(--fg);font:inherit;font-family:var(--display);font-size:1.02rem}
+#nB{border-color:var(--b)}
+.names small{display:block;font-size:.75rem;color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:4px 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-size:.9rem}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--desk)}
+.chip.lv3[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:#fff}
+.opt{display:flex;gap:12px;align-items:flex-start}
+.opt input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--a);flex:none}
+.opt b{display:block;font-weight:500}
+.opt span span{font-size:.85rem;color:var(--muted)}
+
+/* ---------- bank & list ---------- */
+.bar-h{display:flex;align-items:center;gap:12px}
+.bar-h h2{flex:1}
+.back{padding:6px 12px 6px 0;color:var(--muted)}
+.sheet{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:2px 16px}
+details+details{border-top:1px solid color-mix(in srgb,var(--line) 25%,transparent)}
+summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"＋";color:var(--muted)}
+details[open] summary::after{content:"－"}
+summary .nm{flex:1;font-family:var(--display)}
+.qrow{display:flex;width:100%;text-align:left;align-items:center;gap:10px;padding:9px 0;border-top:1px dashed color-mix(in srgb,var(--line) 30%,transparent)}
+.qt{flex:1;min-width:0}
+.pip{font-size:.7rem;color:var(--a);letter-spacing:.05em;flex:none;width:2.6em}
+.st{font-size:.72rem;padding:1px 8px;border-radius:4px;border:1.5px solid currentColor;flex:none;transform:rotate(-4deg)}
+.st-match,.st-nope{color:var(--a)} .st-ok{color:var(--amber)} .st-talk,.st-pass{color:var(--void)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.tabs button{padding:10px;font-family:var(--display)}
+.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--desk)}
+.li{display:flex;gap:12px;align-items:center;padding:12px 0}
+.li+.li{border-top:1px dashed color-mix(in srgb,var(--line) 30%,transparent)}
+.li input{width:20px;height:20px;margin:0;accent-color:var(--ok);flex:none}
+.li label{flex:1;min-width:0;display:flex;flex-direction:column}
+.li.done .qt{text-decoration:line-through;color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:28px 0;margin:0}
+.danger{color:var(--a)}
+textarea{width:100%;box-sizing:border-box;min-height:160px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--fg);padding:10px;font:inherit}
+</style>
+
+</head>
+<body>
+<section id="home" class="screen"></section>
+<section id="play" class="play" hidden>
+  <div class="half" id="hB"></div>
+  <div class="mid"><button class="ic" data-act="home" aria-label="結束這局">⌂</button><div class="punch" id="punch" role="img" aria-label="共識 0"><span class="slots" id="slots"></span><span class="voids" id="voids"></span></div><button class="ic" data-act="skip" aria-label="換一題">↻</button></div>
+  <div class="half" id="hA"></div>
+</section>
+<section id="bank" class="screen" hidden></section>
+<section id="list" class="screen" hidden></section>
+<div id="tut" class="tut" role="dialog" aria-modal="true" aria-label="怎麼玩" hidden></div>
+<div id="live" class="sr" aria-live="polite"></div>
+
+<script>
+const GROUPS=[{id:'eat',name:'吃喝'},{id:'date',name:'約會'},{id:'trip',name:'旅行'},{id:'life',name:'生活'},{id:'sweet',name:'甜蜜'},{id:'dare',name:'挑戰'},{id:'us',name:'未來與心聲'},{id:'hot',name:'親密'}];
+// 每行開頭數字 = 尺度（1 輕鬆、2 心跳、3 限制級）。
+// ponytail: 題目 id = 分類 + 行號，新題目請加在該分類最後，否則舊紀錄會對錯題。
+const CATS=[
+{id:'food',m:'kd',g:'eat',name:'吃什麼',qs:`
+1一起吃一次吃到飽，吃到扶牆出來
+1去夜市只准買沒吃過的攤
+1輪流幫對方點餐，對方不能看菜單
+1一起去吃一家必比登推薦的店
+1早起去吃傳統早餐店，再回去睡回籠覺
+1存錢吃一次很貴的 omakase
+1一起吃辣到流眼淚的麻辣鍋
+1去便利商店各買 200 元，拼出一頓晚餐
+1找一家只有在地人知道的小吃店
+1一起吃宵夜吃到凌晨
+1半夜突然出門買鹹酥雞
+1吃一次衣索比亞或喬治亞料理
+1穿得很正式去喝下午茶
+1吃一頓只有甜點的晚餐
+1隨便走進一家沒聽過的餐廳
+3用嘴餵對方吃一顆草莓
+1去酒吧各點一杯沒喝過的調酒
+1在家煮火鍋，各自偷放一樣神秘食材
+1一起排一家要排兩小時的名店`},
+{id:'cook',m:'kd',g:'eat',name:'一起下廚',qs:`
+1一起包水餃，比誰包得醜
+1照著影片挑戰一道很難的料理
+1一起做一個生日蛋糕
+1一起復刻小時候最愛吃的一道菜
+1一起醃一罐泡菜或梅子，等它熟
+1一人煮主菜一人做甜點，互相打分
+1一起烤披薩，各自設計半邊口味
+1一起做野餐便當，帶去公園吃
+1一起去傳統市場買菜再回家煮
+1一起滷一大鍋滷味
+3只穿圍裙煮飯
+1用冰箱剩下的東西即興做一餐
+1一起學手沖咖啡
+1一起從揉麵開始做手工麵`},
+{id:'date',m:'d',g:'date',name:'約會行程',qs:`
+1到電影院現場挑一部沒聽過的電影
+1一起去夾娃娃，預算 300 元
+1去唱 KTV，只唱情歌對唱
+1去看一場脫口秀或即興劇
+1在百貨公司互相挑一套衣服給對方試穿
+1去逛 IKEA，假裝我們已經住在一起
+1搭捷運到一個沒去過的站隨便亂逛
+1看展時各挑一件最愛的作品講給對方聽
+1去山上看星星
+1去看一場球賽，替同一隊加油
+1去遊樂園坐最刺激的設施
+1去寵物咖啡廳待一下午
+1玩一場密室逃脫
+1一起逛書店，互相挑一本書送對方
+1下雨天出門散步不撐傘
+1在公園野餐，食物自己準備
+1熬夜或早起去看日出
+1逛二手市集，預算 500 元互買禮物
+1在桌遊店待一整天
+1去拍貼機拍一整組大頭貼
+1一起去聽演唱會
+3去汽車旅館的主題房過夜`},
+{id:'retro',m:'d',g:'date',name:'重返第一次',qs:`
+1回到我們第一次約會的地方
+1假裝第一次見面，重新搭訕一次
+1把當初第一次聊天的訊息翻出來一起看
+1再穿一次第一次約會穿的衣服
+1各自說出告白那天對方不知道的細節
+1寫一封信給剛認識時的對方
+1用一樣的姿勢重拍我們最早的合照
+1去吃曖昧期一起吃過的那家店`},
+{id:'season',m:'d',g:'date',name:'季節限定',qs:`
+1夏天去海邊玩水玩到曬傷
+1冬天一起吃薑母鴨
+1過年一起包紅包給兩邊的家人
+1聖誕節交換禮物，預算限 500 元
+1中秋節一起烤肉
+1一起去看煙火
+1一起去賞櫻
+1秋天去山上看楓葉
+1颱風天在家煮泡麵看電影
+1過一個很浮誇的情人節
+1萬聖節穿情侶 Cosplay
+1跨年夜在家兩個人倒數
+1去下雪的地方堆一個雪人
+1夏天半夜騎車去吃剉冰`},
+{id:'play',m:'kd',g:'date',name:'宅在一起玩',qs:`
+1一起破關一款雙人合作遊戲
+1熬夜看完一部動漫
+1一起拼完一幅一千片拼圖
+1一起玩體感運動遊戲玩到流汗
+1一起聽完一整張專輯，聽完再討論
+1看一部對方小時候最愛的電影
+1互相推坑一部影集，各看一集
+1一起去電玩展或動漫展
+1一起看一場電競比賽
+1一起玩一整晚的真心話大冒險`},
+{id:'travel',m:'kd',g:'trip',name:'旅行',qs:`
+1來一次說走就走的旅行，當天才決定去哪
+1一起去離島住一晚
+1去日本自由行一週
+1去一個語言完全不通的國家
+1去露營，自己搭帳篷
+1搭夜車或臥鋪火車去旅行
+1騎機車環島
+1住一次很貴的飯店，整天不出門
+1到國外跨年
+1去看極光
+1一起去賞櫻或賞楓
+1完全不做攻略，到當地再隨便走
+1旅行時一人負責一天的行程，另一人不准問
+1一起去泡野溪溫泉
+1搭一次郵輪
+1去參加國外的音樂祭
+1在國外的超市買一堆沒看過的零食
+1一起去看富士山
+1去對方長大的城市，讓他當導遊
+1一起去對方最想去但還沒去過的國家
+1旅行時每天互拍一張美照`},
+{id:'home',m:'d',g:'life',name:'居家日常',qs:`
+1一整天不出門，只穿睡衣
+1一起大掃除，邊放很大聲的音樂
+1一起追完一整季影集
+1在家用棉被和枕頭搭一個基地
+1一起重新布置房間
+1一起養一盆植物，看能不能養活
+1一起拼一千片拼圖
+1週末早上一起賴床到中午
+1一起挑戰煮一道沒做過的菜
+1在客廳打地鋪睡一晚
+1把洗衣服、摺衣服當成約會
+1幫對方剪頭髮
+1互相幫對方擦指甲油
+1一起去超市採買一週的菜
+1在家辦一場只有兩個人的電影節
+1在陽台吃晚餐
+1一起整理對方的衣櫃，決定要丟哪些`},
+{id:'ritual',m:'d',g:'life',name:'我們的小儀式',qs:`
+1每次見面都要擁抱十秒
+1有一句只有我們懂的暗號
+1每個月輪流安排一次驚喜約會
+1睡前跟對方說今天最好的一件事
+1每週固定一個晚上不看手機
+1吵完架一定要在睡前和好
+1每年在同一個地方、用同一個姿勢拍合照
+1有一首屬於我們的歌
+2出門前一定要親一下
+1分開時要目送對方到看不見
+1寫一本只有我們兩個看的交換日記
+1每週日固定一起吃早午餐
+1每年紀念日寫信給對方
+1有一個只有我們會用的暱稱`},
+{id:'money',m:'d',g:'life',name:'錢與生活',qs:`
+1開一個共同帳戶存旅遊基金
+1每月固定一次「豪華約會」
+1約會輪流請客
+1一起記帳一個月
+1一起上一堂理財課
+1一起去看房子，只是看看
+1互相知道對方的薪水
+1一起買一個很貴但很想要的東西
+1每個月給對方一筆「不用問的零用錢」
+1一起斷捨離，把不用的東西賣掉
+1一起規劃十年後想過的生活`},
+{id:'digital',m:'d',g:'life',name:'手機與網路',qs:`
+1交換手機看一分鐘
+1告訴對方我的手機密碼
+1把我們的照片整理成一個共同雲端相簿
+1一起組隊玩同一款手遊
+1開一個只有我們兩個的 IG 小帳
+1吃飯時手機都收進包包
+1互相追蹤所有社群帳號
+1互相開啟手機位置分享
+1每天傳一張日常照片給對方
+1一起建一個共同的待辦清單
+1一起戒短影音一週
+1開一個共享歌單，每週各加一首歌`},
+{id:'health',m:'kd',g:'life',name:'一起變健康',qs:`
+1一起去健身房
+1一起早睡早起一週
+1一起每天走一萬步
+1一起做瑜珈
+1一起去做健康檢查
+1一起戒宵夜一個月
+1一起打羽球或網球
+1每天一起晨跑十分鐘
+1一起每天喝滿 2000cc 的水
+1一起去上一堂冥想課`},
+{id:'spoil',m:'d',g:'sweet',name:'撒嬌與寵愛',qs:`
+1對方生病時煮粥給他
+1幫對方吹頭髮
+1被公主抱一次
+1讓對方枕在腿上掏耳朵
+1幫對方排隊買他想吃的那家甜點
+2在大街上大聲說我愛你
+1沒有節日也突然送花
+1在對方公司樓下等他下班
+1幫對方按摩 30 分鐘
+1抱著一起睡午覺
+1用很肉麻的語氣撒嬌一整天
+1背對方走一段路
+1在對方朋友面前大方誇他
+1偷偷在對方包包裡塞小紙條
+1讓對方一整天不用做任何決定
+2早上用親吻叫對方起床
+1錄一段語音給對方失眠時聽`},
+{id:'surprise',m:'d',g:'sweet',name:'驚喜與紀念日',qs:`
+1找對方的好朋友一起辦一場驚喜派對
+1做一本我們的相簿
+1自己寫一首歌或一首詩給對方
+1準備一個尋寶遊戲，最後找到禮物
+1包場一間小餐廳或電影院
+1一起刺青或打一樣的耳洞
+1買情侶對戒
+1穿情侶裝出門
+1送對方「一年份的小禮物」，每個月拆一個
+1一起去拍一組正式的情侶寫真
+1一起埋一個時間膠囊，五年後打開
+1寫 100 個喜歡對方的理由
+1偷偷蒐集朋友的祝福影片送對方
+1一起去做陶藝，做一對杯子`},
+{id:'touch',m:'d',g:'sweet',name:'肢體親密',qs:`
+1走路時十指緊扣
+1在捷運上靠在對方肩膀睡
+1一起躺著聽同一副耳機
+2在公共場合接吻
+1抱著看完一整部電影
+3一起洗澡
+2互相幫對方洗頭
+3一起裸睡
+2擁抱一分鐘，都不說話
+2在電梯裡偷親
+2晚上在被窩裡講悄悄話講到睡著
+2在對方耳邊說情話
+1摸對方的頭髮直到他睡著
+3用按摩油互相按摩
+2看日落的時候接吻
+2早上醒來先抱五分鐘再起床
+2對方在忙的時候從後面抱住他`},
+{id:'adventure',m:'kd',g:'dare',name:'冒險與刺激',qs:`
+1一起跳傘
+1一起去高空彈跳
+1一起去爬百岳
+1一起跑一場馬拉松
+1一起學衝浪
+1玩一次漆彈或生存遊戲
+1一起去玩飛行傘
+1搭熱氣球
+1一起看最恐怖的鬼片，不准閉眼
+1去夜遊探險（合法的那種）
+1一起去攀岩
+1一起參加一次 Cosplay 活動
+1一起報名一個比賽（料理、舞蹈、遊戲都可以）
+1一起去溯溪`},
+{id:'learn',m:'kd',g:'dare',name:'一起學點什麼',qs:`
+1一起上舞蹈課
+1一起學一種新的語言
+1一起學游泳
+1一起學調酒
+1一起學攝影，互相當模特兒
+1一起學一樣樂器，然後合奏一首
+1一起學手語
+1一起上烘焙課
+1一起學開手排車或騎重機
+1一起考潛水執照
+1一起學下棋，然後每週對戰
+1一起經營一個 YouTube 或 IG 帳號
+1一起做一件手作（皮件、木工、編織）`},
+{id:'silly',m:'kd',g:'dare',name:'搞怪挑戰',qs:`
+1在街上一起跳一段舞並錄下來
+1交換衣服穿出門
+1用對方的帳號發一則限動（內容要對方同意）
+1一整天只用台語（或另一種語言）對話
+1一起拍一支很尷尬的短影片
+1在大賣場玩躲貓貓
+1互相幫對方化妝，化完出門吃飯
+1去 KTV 只唱兒歌
+1一整頓飯都用不習慣的那隻手吃
+1假裝是觀光客，用很爛的英文問路
+1一起剪同一種髮型或染同一個顏色
+1互換角色一天，模仿對方的口頭禪
+1穿睡衣一起去便利商店
+1錄一首合唱傳給朋友
+1一起去拍大頭貼，擺最醜的姿勢`},
+{id:'social',m:'d',g:'us',name:'朋友與家人',qs:`
+1一起跟對方的爸媽吃頓飯
+1跟對方的好朋友一起出去玩
+1辦一場派對，邀請兩邊的朋友
+1跟另一對情侶 double date
+1一起參加對方的同學會或公司聚餐
+1過年一起回對方老家
+1在社群公開我們的關係
+1讓對方看我小時候的照片
+1一起去參加朋友的婚禮
+1一起去探望對方的爺爺奶奶
+1一起照顧朋友的小孩一天
+1跟對方的家人一起出國旅行`},
+{id:'future',m:'d',g:'us',name:'未來想像',qs:`
+1一起養一隻貓
+1一起養一隻狗
+1一起住在國外一陣子
+1同居
+1一起搬到另一個城市
+1結婚
+1辦一場小小的婚禮，只請最親的人
+1不辦婚禮，用那筆錢去旅行
+1生小孩
+1老了一起住在海邊
+1一起開一間小店
+1一起去打工度假
+1一起經營一個副業
+1每年一起寫一次「明年想做的事」清單`},
+{id:'heart',m:'d',g:'us',name:'說說心裡話',qs:`
+1希望對方多誇我一點
+1希望吵架時先抱一下再講道理
+1希望對方記得我說過的小事
+1希望每天至少通一次電話
+1希望我們各自都有獨處的時間
+1希望對方偶爾主動安排約會
+1希望對方多分享工作上的事
+1希望我累的時候，對方不用我說就發現
+1希望一起出門時多牽手
+1希望拍照時對方幫我多拍幾張
+1希望睡前一定要說晚安
+1希望週末行程一起決定
+1希望對方偶爾跟我撒嬌
+1希望每個月聊一次「最近覺得我們怎麼樣」
+1希望對方多問我今天過得好不好
+1希望對方更常跟我的朋友相處
+1希望對方多照顧自己的身體`},
+{id:'sextalk',m:'x',g:'hot',name:'聊聊親密',qs:`
+2告訴對方我最喜歡我們哪一次
+2說出一個一直想試但沒說出口的事
+2一起定一個「今天不想要」的暗號
+2結束後聊聊剛剛哪裡最喜歡
+2一起聽一集談性的 Podcast
+2讓對方知道我最敏感的地方
+2約好每週至少親熱一次
+2想要就主動，不用等對方開口
+2用一個 emoji 當作「今晚想要」的暗號
+2說出對方哪一句話讓我最有感覺`},
+{id:'bed',m:'x',g:'hot',name:'床上的小嘗試',qs:`
+2把燈關掉，只點蠟燭
+2放一份專屬的歌單
+2一起看一部情色電影
+2開著燈，看清楚彼此
+2換上新床單，把房間佈置成飯店
+3蒙上眼睛
+3用領帶輕輕綁住手
+3讓對方主導一整晚
+3由我主導一整晚
+3換一個沒試過的姿勢
+3在浴室裡
+3一早醒來就來一次
+3一整晚都不急，慢慢來
+3用冰塊玩一下溫度差
+3一起挑一個情趣玩具
+3一起逛情趣用品店
+3出門前來個十分鐘快速版
+3今晚只用手和嘴
+3邊做邊說出感受
+3在鏡子前面`},
+{id:'roleplay',m:'x',g:'hot',name:'角色扮演',qs:`
+2穿對方指定的內衣
+3扮演陌生人，在酒吧搭訕後一起回家
+3扮演按摩師和客人
+3扮演上司和下屬
+3穿上一套軍裝或機師制服
+2只穿對方的襯衫
+2去飯店假裝我們在偷情
+3一整天傳訊息調情，晚上見面兌現
+3錄一段色色的語音給對方
+2扮演第一次約會的兩個人
+3玩一次色色的骰子遊戲
+3寫一張「今晚我想要…」的紙條給對方`},
+{id:'place',m:'x',g:'hot',name:'換個地方',qs:`
+3在自家車庫的車裡
+3在新家的每個房間都來一次
+3在飯店的落地窗前
+3在溫泉湯屋
+3在廚房
+3在客廳沙發
+3露營時在帳篷裡
+2在夜晚的海邊接吻接到停不下來
+3在不會被看到的陽台
+3在旅行的最後一晚瘋狂一次`},
+{id:'k_taste',m:'k',g:'eat',name:'口味大不同',qs:`
+1吃東西越辣越過癮
+1吃生魚片和生蠔
+1香菜加好加滿
+1早餐吃得很豐盛
+1吃加了鳳梨的披薩
+1吃要自己剝殼的蝦蟹
+1每天都要喝手搖飲
+1吃苦瓜這類苦味的菜
+1吃路邊攤勝過高級餐廳
+1自己下廚勝過外食
+1吃素一個月
+1嘗試蟲蟲料理
+1點餐都點沒吃過的
+1吃飯前一定要先拍照`},
+{id:'k_life',m:'k',g:'life',name:'生活習慣',qs:`
+1假日睡到自然醒
+1早上六點起床運動
+1房間永遠保持整齊
+1週末跟朋友聚會
+1週末一個人在家充電
+1下雨天哪裡都不去
+1手機二十四小時不靜音
+1養一隻寵物
+1住在熱鬧的市中心
+1住在安靜的山上或海邊
+1每天自己帶便當上班
+1看到喜歡的東西就馬上買
+1每天寫日記或記帳
+1睡前滑手機滑到很晚`},
+{id:'k_fun',m:'k',g:'date',name:'喜歡怎麼玩',qs:`
+1去逛週末市集
+1去夜店跳舞
+1在博物館待一整天
+1去 KTV 唱整晚
+1去聽一場演唱會
+1玩桌遊玩到半夜
+1打電動打到天亮
+1去玩一次大型實境解謎遊戲
+1去遊樂園坐雲霄飛車
+1去看一場脫口秀
+1一個人去看電影
+1看運動比賽轉播
+1拍照打卡分享生活
+1去動物園或水族館`},
+{id:'k_dream',m:'k',g:'us',name:'人生想像',qs:`
+1辭職去環遊世界
+1四十歲前退休
+1自己創業
+1做喜歡但錢少的工作
+1在國外住幾年
+1買一間自己的房子
+1刺一個有意義的刺青
+1染一次很誇張的髮色
+1擁有一片自己的菜園
+1這輩子去過五十個國家
+1出一本書或發表一件作品
+1去當志工一段時間
+1老了住在鄉下
+1一輩子都在同一個城市生活`},
+{id:'k2_weekend',m:'k',g:'life',name:'週末怎麼過',qs:`
+1週末早上去吃早午餐
+1週末排滿三個行程
+1週末什麼計畫都不排
+1週六早上去逛菜市場
+1週末去咖啡廳待一整個下午
+1週末一早去爬郊山
+1週日晚上先把下週的事準備好
+1週末在家把一週的菜一次備好
+1週末一個人去看展
+1週末去河濱騎腳踏車
+1週末下午睡一場很長的午覺
+1週末去逛家具店，只看不買
+1週末找朋友來家裡吃飯
+1週末去上一堂體驗課
+1週末把整週的衣服一次洗完
+1週末去郊外的老街走走
+1週末去圖書館待一整天
+1週五下班直接出發去外縣市
+1週末早上去公園看人遛狗
+1週末去海邊發呆一下午
+1週末在家打掃到閃閃發亮`},
+{id:'k2_trip',m:'k',g:'trip',name:'旅行風格',qs:`
+1旅行前把行程排到每小時
+1旅行時一天只排一個景點
+1出國只帶一個登機箱
+1旅行一定要住有浴缸的房間
+1在國外吃當地的速食店
+1旅行時每天寄一張明信片
+1一個人出國旅行
+1跟團旅行，什麼都不用想
+1旅行時睡青年旅館的上下鋪
+1在同一個城市住滿兩週
+1旅行時買一大堆伴手禮
+1旅行時早上五點起床拍景
+1搭飛機一定要選靠窗
+1去一個沒有網路的地方旅行
+1旅行時跟當地人學一句話
+1在國外租車自駕
+1旅行時去逛當地的傳統市場
+1為了一間餐廳飛去一個國家
+1旅行最後一天什麼都不排
+1每次旅行都買一個冰箱磁鐵
+1去南極或北極`},
+{id:'k2_work',m:'k',g:'us',name:'工作與夢想',qs:`
+1一年換一次工作
+1在同一家公司待十年
+1在家遠端工作，不用進辦公室
+1做一份可以到處跑的工作
+1三十歲轉換跑道重新開始
+1下班後完全不回工作訊息
+1為了做出好成果願意加班
+1當一間公司的主管
+1有一份穩定的鐵飯碗
+1把興趣變成工作
+1同時做兩三份斜槓工作
+1上台在幾百人面前演講
+1出國念一次書
+1上一次電視或新聞
+1開一間自己的咖啡店
+1做一份能幫助很多人的工作
+1每天準時下班
+1在新創公司拚一把
+1一週只上四天班
+1四十歲再回學校讀書
+1在自己的領域拿一個獎`},
+{id:'k2_social',m:'k',g:'us',name:'社交電量',qs:`
+1聚會時主動跟陌生人聊天
+1參加一場完全不認識人的聚會
+1在聚會當主揪
+1跟朋友出去一整天不回家
+1一個月只見一次朋友就夠
+1打電話勝過傳訊息
+1看到訊息馬上回
+1在群組裡當最常講話的人
+1過生日辦一場熱鬧的派對
+1過生日一個人靜靜過
+1有一大群朋友
+1只有兩三個很深的好朋友
+1聚會到一半先偷偷離開
+1跟計程車司機聊一路
+1去參加讀書會或同好社團
+1讓朋友臨時來家裡借住
+1在餐廳幫大家點菜
+1第一次見面就交換 IG
+1吃飯時跟隔壁桌聊起來
+1被大家當成開心果
+1下班後還想跟同事吃飯`},
+{id:'k2_money',m:'k',g:'life',name:'花錢習慣',qs:`
+1每個月存下一半薪水
+1發薪水當天先犒賞自己
+1買東西前先比價三家
+1為了集點多買一點
+1用分期付款買想要的東西
+1購物節半夜守在手機前搶優惠
+1買一個名牌包或名錶
+1衣服穿到破了才換
+1花大錢買一張好床
+1花錢買體驗勝過買東西
+1只用現金，不用信用卡
+1開始認真學理財
+1買一張彩券做發財夢
+1常常請朋友吃飯
+1在網路上買二手東西
+1為喜歡的偶像或作者花錢
+1一次買齊十件同款Ｔ恤
+1訂閱一堆串流平台
+1存一筆錢只為了一次大旅行
+1生日送自己一個大禮物
+1排隊搶限量商品`},
+{id:'k2_media',m:'k',g:'date',name:'追劇聽歌',qs:`
+1一口氣追完一整季韓劇
+1看劇開 1.5 倍速
+1先看結局再決定要不要看
+1同一部電影重看十遍
+1看電影一定待到片尾彩蛋
+1看書看到半夜捨不得睡
+1同一首歌單曲循環一整天
+1去聽一場古典音樂會
+1每天通勤聽 Podcast
+1看綜藝節目笑到肚子痛
+1跟著電視劇學一種語言
+1追一部長達百集的八點檔
+1在電影院看 IMAX 或 4DX
+1去看一場舞台劇或音樂劇
+1把一首歌的饒舌整段背起來
+1追一個 YouTuber 追好幾年
+1看紀錄片看到入迷
+1在家用唱盤聽黑膠
+1看完劇去網路上找所有解析
+1去劇的拍攝地朝聖
+1自己寫小說或同人文`},
+{id:'k2_food',m:'k',g:'eat',name:'美食冒險',qs:`
+1吃一次米其林三星
+1吃一大塊榴槤
+1喝一杯不加糖的黑咖啡
+1手搖飲點全糖加滿料
+1吃臭豆腐，越臭越好
+1早餐只喝一杯咖啡
+1宵夜吃泡麵加一顆蛋
+1自己在家捏一次壽司
+1吃牛排點三分熟
+1試試看分子料理
+1吃火鍋一定要沾沙茶
+1每週吃一次拉麵
+1去吃一家沒有菜單的店
+1在便利商店找新品來吃
+1挑戰吃牛肚、大腸這類內臟
+1去酒廠或酒莊參加試飲
+1吃薯條沾冰淇淋
+1一天吃五餐
+1學會一道拿手菜招待朋友
+1去一間主題餐廳吃飯
+1去吃一次辦桌`},
+{id:'k2_move',m:'k',g:'dare',name:'動起來',qs:`
+1每天做一百下深蹲
+1去上一堂拳擊課
+1下班後去打籃球
+1在家跟著影片跳有氧
+1去游泳池游一千公尺
+1騎 YouBike 通勤
+1練出六塊腹肌
+1去打一場保齡球
+1早上去公園打太極拳
+1去學滑雪
+1練到可以倒立
+1玩一次高空滑索
+1參加一場鐵人三項
+1爬樓梯不搭電梯
+1去打一場桌球
+1練一個月的皮拉提斯
+1去划一次獨木舟或 SUP
+1跳完一整支 K-pop 舞
+1去射箭場射一次箭
+1每天伸展十分鐘
+1騎腳踏車上武嶺`},
+{id:'k2_quirk',m:'k',g:'dare',name:'奇怪的小癖好',qs:`
+1洗澡時開個人演唱會
+1吃東西把最喜歡的留到最後
+1睡覺一定要抱著東西
+1對著植物說話
+1襪子一定要成對才穿
+1把東西按顏色排好
+1跟寵物用娃娃音講話
+1排隊時偷偷觀察路人
+1收集手搖飲杯的封膜
+1走路不踩地磚的縫線
+1吃飯一定要配飲料
+1半夜突然想整理房間
+1冰箱要塞滿才安心
+1手機桌布一年都不換
+1看到泡泡紙就想捏
+1一邊走路一邊自言自語
+1聞新書的味道
+1同一家店永遠點同一樣
+1幫家裡的東西取名字
+1筆記本只寫前幾頁
+1電視音量一定要調到偶數`},
+{id:'k2_child',m:'k',g:'date',name:'童年回憶',qs:`
+1再玩一次小時候的紅綠燈
+1重看一次小時候的卡通
+1去柑仔店買古早味零食
+1再玩一次跳格子
+1翻出小時候的日記來看
+1回小學母校走一圈
+1再吃一次學校的營養午餐
+1摺紙飛機比誰飛得遠
+1再玩一次大富翁
+1去打一次彈珠台
+1吃一支雞蛋冰或叭噗
+1再玩一次紅白機
+1為了集玩具買一堆乖乖
+1參加一次小學同學會
+1重唱一次小學畢業歌
+1再去一次兒童樂園
+1把小時候的玩具找回來
+1再玩一次捉迷藏
+1用彩色筆畫完一整本著色本
+1吃一次學校福利社的麵包
+1在公園盪鞦韆盪到最高`},
+{id:'k2_value',m:'k',g:'us',name:'價值觀小測驗',qs:`
+1說真話，就算會讓人不開心
+1借錢給好朋友
+1撿到錢一定交給警察
+1有人插隊時直接出聲
+1一輩子只做一件事，做到最好
+1什麼都想試試看
+1做決定前先問很多人的意見
+1相信直覺勝過分析
+1遲到五分鐘也要先說
+1答應的事再累也要做到
+1吵架後先開口和好
+1被稱讚時大方說謝謝
+1每年捐一點錢給公益團體
+1跟家人住得很近
+1活到一百歲
+1擁有一項超能力
+1回到過去改變一件事
+1提前知道自己的未來
+1過一天別人的人生
+1每隔幾年就換一個城市住`},
+{id:'d2_night',m:'d',g:'date',name:'夜晚約會',qs:`
+1一起在頂樓看夜景
+1半夜開車去海邊聽浪聲
+1看一場午夜場電影
+1下班後約在河堤散步吹風
+1一起去天文台用望遠鏡看月亮
+1逛夜市逛到收攤才回家
+1在 24 小時書店待到凌晨
+1騎車兜風，不設目的地
+1去酒吧聽一場爵士現場演出
+1在河濱躺著看飛機降落
+1找一家開到很晚的咖啡廳聊天
+1夏天晚上去山裡看螢火蟲
+1晚上去泡一次露天溫泉
+1半夜去漁港看漁船進港
+1參加一次夜間動物園導覽
+1去聽一場晚上的戶外音樂會
+1晚上去廟口吃一碗熱湯
+2在摩天輪最高點接吻
+2在沒人的街上跳一支慢舞
+2在車裡聽情歌，牽著手不說話
+2在路燈下來一個電影式的吻`},
+{id:'d2_home',m:'d',g:'life',name:'在家約會',qs:`
+1在家一起做手捲壽司
+1一起在家做香氛蠟燭
+1在家開一場只有一個觀眾的演唱會
+1一起拼完一組樂高
+1一起畫一幅畫，各畫一半
+1在家玩一套實境解謎遊戲
+1在家泡腳敷臉，來個居家 SPA
+1在家辦一場兩個人的品酒會
+1在家來一場枕頭大戰
+1一起烤餅乾，等烤箱時跳舞
+1穿得很正式在家吃泡麵
+1在家一起跟著影片做瑜伽
+1在家玩兩人版猜歌比賽
+1在家辦一場走秀，穿最誇張的衣服
+1一起上一堂線上課程
+1在家扮咖啡店，只有一位客人
+1一起把家裡的燈換成暖黃色
+2關燈只點蠟燭，躺著聊天
+2關燈開星空投影，抱著發呆
+2下雨天窩在同一條毯子裡聽雨
+2在沙發上互相靠著讀同一本書`},
+{id:'d2_trip',m:'d',g:'trip',name:'說走就走小旅行',qs:`
+1搭火車到終點站，再決定去哪
+1丟硬幣決定往南還是往北
+1騎車去別的鄉鎮吃一碗麵就回家
+1在山上的民宿住一晚
+1搭渡輪去離島玩一天
+1一起去平溪放天燈
+1坐一趟花東慢車看海
+1在小鎮租腳踏車亂騎一天
+2住一晚有浴缸、能看海的房間
+1去農場摘草莓
+1去一個沒有網路的地方過一晚
+1開車兜風，一路只聽老歌
+1一日遊只准帶一千元
+1在休息站吃遍所有小吃
+1一起上山看一次雲海
+1去追一次油桐花或繡球花
+1睡前臨時訂票，隔天就出發
+1找一間老街的老旅社住一晚
+2在旅館陽台抱著看海到天亮
+1旅行最後一晚寫卡片給對方
+2在山頂大喊對方的名字`},
+{id:'d2_gift',m:'d',g:'sweet',name:'送禮與小驚喜',qs:`
+1在浴室鏡子上留一句愛的留言
+1記下對方隨口說想要的，偷偷買
+1送一份親手做的禮物
+1偷偷把對方的手機桌布換成合照
+1幫對方報名一堂他一直想上的課
+1從旅行的地方寄明信片給對方
+1做一罐愛的籤，每天抽一張
+1送一束不是花的花束（零食或娃娃）
+1生日當天每小時送一個小禮物
+2把一首歌改歌詞唱給對方
+1幫對方預約一次按摩
+1送一本「隨時兌換」的願望券
+1把對方喜歡的照片洗出來裱框
+1帶對方去他念念不忘的那家店
+1沒有理由地手寫一張卡片
+1偷偷幫對方處理好一件麻煩事
+1畫一本我們的四格漫畫送對方
+1在對方的外套口袋藏一顆糖
+2互相寫一封情書念給對方聽
+2當眾單膝跪下送一份小禮物
+2讓對方閉上眼，親手幫他戴上禮物`},
+{id:'d2_care',m:'d',g:'sweet',name:'照顧彼此',qs:`
+1對方加班時送宵夜過去
+1對方不舒服時準備熱飲和暖暖包
+1每天提醒對方喝水
+1對方心情差時，安靜陪在旁邊
+1對方面試前陪他一起練習
+1幫對方剪指甲
+1陪對方挑一件適合的大衣
+1睡不著時打給對方，聊到睡著
+1對方喝醉時負責接他回家
+1下雨天帶傘去接對方
+1幫對方洗一次車或機車
+1陪對方去看醫生
+1一起運動，互相督促對方
+1背熟對方飲料的甜度冰塊
+1對方低潮時寫一張打氣清單
+2天冷時把手放進對方口袋
+2幫對方卸妝洗臉
+1幫對方整理好隔天要帶的東西
+2對方哭的時候，抱著他直到平靜
+2洗完澡幫對方擦乳液
+2在對方額頭親一下說辛苦了`},
+{id:'d2_hear',m:'d',g:'us',name:'想聽你說',qs:`
+1聽對方講他的初戀
+2聽對方講第一次對我心動的瞬間
+1聽對方說小時候最丟臉的事
+1聽對方講他和最好朋友怎麼認識
+1聽對方說最近在煩惱什麼
+1聽對方說最喜歡我的哪個小習慣
+1聽對方說他最想被怎麼稱讚
+1聽對方講人生最低潮的時候
+1聽對方說他對我的第一印象
+1聽對方說他最怕失去什麼
+1聽對方說他做過最勇敢的事
+1聽對方說他其實最想做的工作
+1聽對方說我做什麼讓他覺得被愛
+1聽對方說我們最像的地方
+1聽對方講他爸媽是怎麼在一起的
+1聽對方說最想跟我完成的事
+1聽對方說小時候想成為什麼人
+1聽對方描述我們老了以後的樣子
+2聽對方用三種語言說我愛你
+2聽對方說他什麼時候最想親我
+2聽對方說一個只告訴我的秘密`},
+{id:'d2_memory',m:'d',g:'us',name:'留下紀錄',qs:`
+1記下一起看過的每一部電影
+1一起做一本約會手帳
+1每天拍一秒影片，年底剪成一支
+1用拍立得記錄每一次約會
+1偷偷錄下對方的笑聲存起來
+1每年錄一段影片給一年後的我們
+1在地圖上標出我們去過的每個地方
+1收藏對方傳過最好笑的訊息截圖
+1每個月選一張本月代表照
+1一起去錄音室錄一首歌
+1一起錄一集只有我們聽的 Podcast
+1每次旅行都買一個當地冰箱磁鐵
+1請路人幫我們拍一張不擺拍的照片
+1一起寫一篇我們的愛情小說
+2把對方說過的甜言蜜語抄在本子上
+1請街頭畫家幫我們畫似顏繪
+1做一組我們的專屬貼圖
+1去老照相館拍一張復古合照
+1偷拍對方睡著的臉
+2拍一張我們接吻的剪影照
+1把我們的聊天紀錄印成一本書`},
+{id:'d2_promise',m:'d',g:'life',name:'我們的約定',qs:`
+1吵架時誰先道歉，就被請一杯飲料
+1每週固定一天是約會日
+1生氣時喊暫停，冷靜十分鐘再談
+1不在別人面前吐槽對方
+2不管多忙，每天說一次想你
+1約好吵架不翻舊帳
+1重要決定一定先跟對方商量
+1約好約會遲到的人請吃甜點
+1每年一起去一個沒去過的地方
+1對方生日一定請假陪他
+1每次分開前，先約好下次見面
+1約好吵架時不說「分手」
+1手機快沒電前先報平安
+1猜拳輸的人負責洗碗一週
+1誰先到家誰就煮飯
+1每半年交換一件「希望你改的事」
+1遠距時每晚視訊十分鐘
+1約好吵架時不扯到對方家人
+1約好不偷看對方手機
+1約好有心事不要憋超過三天
+2約好每次見面先親一下再說話`},
+{id:'d2_couple',m:'d',g:'dare',name:'情侶挑戰',qs:`
+1限時一分鐘互畫對方
+1一整天只能用三個字以內回話
+1矇眼試吃，猜對方餵的是什麼
+1一起完成一次 5K 路跑
+1一起挑戰爬一座百岳
+1用對方的手機自拍二十張
+1考對方「關於我的二十題」
+1輪流幫對方點餐，不准拒絕
+1互相模仿對方生氣的樣子
+1背對背畫同一張圖，看有多像
+1一起學一支手勢舞
+1一整天說話都要押韻
+1一整天不准說「好」
+1兩人三腳走去吃早餐
+1一整天只說好話，不准抱怨
+2矇眼讓對方牽著走一段路
+2一分鐘內說出對方十個優點
+2對看四分鐘，都不准說話
+2比賽誰能讓對方先臉紅
+2猜拳輸的人要親對方十下
+2用一個吻讓對方猜我今天的心情`},
+{id:'d2_holiday',m:'d',g:'date',name:'節日怎麼過',qs:`
+1情人節不出門，在家煮大餐
+1七夕一起去拜月老，求感情長久
+1生日過一整天「壽星說了算」
+1每個節日都做一張手作卡片
+1聖誕節一起佈置一棵聖誕樹
+1中秋節一起做月餅
+1端午節一起包粽子
+1元宵節一起去看燈會
+1情人節和白色情人節輪流準備驚喜
+1生日去吃對方小時候最愛的店
+1紀念日穿正式去吃高級餐廳
+1過一個不送禮、只寫信的情人節
+1交往一百天辦一個小慶祝
+1冬至一起煮湯圓
+1母親節一起準備兩邊媽媽的禮物
+1把普通的星期二當節日過
+1聖誕節去逛聖誕市集
+1過年一起寫春聯貼在門口
+2跨年倒數歸零的那一刻接吻
+1生日讓對方許一個願，我負責實現
+2生日零點，準時出現在對方面前`},
+{id:'d2_food',m:'d',g:'eat',name:'約會吃什麼',qs:`
+1去吃一次高空景觀餐廳
+1一起吃遍台南的牛肉湯
+1去吃鐵板燒看師傅表演
+1點一份情侶套餐
+2一杯飲料插兩根吸管一起喝
+1去吃一次全黑的暗中餐廳
+1去一家主題餐廳（監獄、貓咪都好）
+1路邊攤吃完再去吃高級甜點
+1一起逛早市，邊走邊吃
+1去老派冰果室吃一碗水果冰
+1交換各自的私藏口袋名單
+1去居酒屋吃到深夜
+1一起參加一次品茶行程
+1合吃一份超大的聖代
+1去吃對方家鄉的特色小吃
+1去吃一間開了五十年的老店
+2在餐廳桌下偷偷牽手
+1吃飯時互相夾對方愛吃的菜
+2用同一根湯匙吃完一份甜點
+2玩 Pocky 遊戲，看誰先放棄`},
+{id:'x2_flirt',m:'x',g:'hot',name:'調情與前戲',qs:`
+2睡前傳一句色色的訊息
+2出門前傳一張暗示今晚的自拍
+2吃飯時在桌下用腳偷碰對方
+2用眼神暗示對方「回家再說」
+2晚餐時預告今晚想對你做的事
+2一起跳一支貼身的慢舞
+2用指尖在背上寫字，猜猜寫什麼
+2換上一套讓對方心跳加速的睡衣
+2光接吻就親滿十分鐘
+3慢慢幫對方脫掉每一件衣服
+3前戲至少半小時才進入正題
+3從脖子一路往下親
+3隔著衣服挑逗對方
+3為對方跳一段脫衣舞
+3只准看不准碰，忍到最後一刻
+2輕咬對方的耳垂
+3在別人看不到的地方留一個吻痕
+3故意吊胃口，等對方開口要
+2坐在對方腿上接吻`},
+{id:'x2_body',m:'x',g:'hot',name:'身體探索',qs:`
+2一起找出對方三個新的敏感帶
+2裸著抱在一起，什麼都不做
+2用指尖慢慢描過對方身體的輪廓
+2互相幫對方擦乳液
+2洗完澡用毛巾幫對方擦乾
+2全裸讓對方好好欣賞一次
+3請對方示範喜歡怎麼被摸
+2找出對方最喜歡的親吻方式
+3關燈只靠觸覺
+3雙手放背後，只能用嘴
+3從腳趾開始一路親上來
+3親遍對方背後的每一寸
+3邊做邊問對方力道剛不剛好
+3比賽誰先忍不住出聲
+3今晚只服務對方，不求回報
+3示範自己最喜歡的方式給對方看
+2只用呼吸輕拂對方的肌膚
+3試試慢速的譚崔式親密
+3試著跟對方同時高潮`},
+{id:'x2_fantasy',m:'x',g:'hot',name:'幻想與情境',qs:`
+2輪流說一個最常想起的性幻想
+2一起寫一段我們的情色小故事
+2分享一個夢到我們的春夢
+2睡前一起讀一段情色小說
+2說說最想重現哪部電影的場景
+2各寫一個情境，抽籤決定今晚演哪個
+3扮演醫生和病人
+3扮演空服員和乘客
+3扮演畫家和裸體模特兒
+3扮演貴族和僕人
+3扮演私人教練和學員
+3玩一次主人和寵物的遊戲
+3扮演超級英雄和反派
+3扮演偶像和粉絲
+3扮演吸血鬼和獵物
+3假裝我們是久別重逢的舊情人
+3扮演警察和嫌犯
+3假裝今晚是我們的新婚之夜
+3一整晚用另一個名字和身分相處`},
+{id:'x2_toys',m:'x',g:'hot',name:'道具與小物',qs:`
+2一起上網挑一套情趣睡衣
+2一起玩情侶親密任務卡
+2穿吊帶襪給對方看
+2送對方一件驚喜的情趣小物
+2用緞帶把自己包裝成禮物
+2一起拆一個神秘情趣盲盒
+3用低溫蠟燭滴在身上
+3用羽毛輕掃對方全身
+3戴上毛絨手銬
+3一起試用跳蛋
+3讓對方拿遙控器控制震動
+3在對方身上塗巧克力醬再舔掉
+3用可食用的彩繪筆在身上畫畫
+3用小皮拍輕輕打屁股
+3試試溫感潤滑液
+3把按摩棒加進前戲
+3戴上一條情趣項圈
+3戴上兔耳和尾巴`},
+{id:'x2_sync',m:'x',g:'hot',name:'我們的默契',qs:`
+2定一個安全詞
+2用紅黃綠燈表示舒服程度
+2開始前各說一件今晚不要的事
+2每三個月重新聊一次彼此的界線
+2一起填一張想試／不想試清單
+2約好吵架當天不勉強親熱
+2約一個「換你主導」的暗號
+2說出最喜歡的節奏是快還是慢
+2告訴對方床上想被怎麼稱呼
+2說說一天中哪個時段最有感覺
+2坦白一件做的時候其實不喜歡的事
+2約好不想要時直接說，不用解釋
+2一起聊性健康，約好定期檢查
+2試新東西前先約好隨時可以喊停
+3今晚不說話，只用肢體溝通
+3中途停下來確認對方的感覺
+3用聲音告訴對方哪裡對了
+3輪流許願，這次照你的願望來
+3用手引導對方到最舒服的地方`},
+{id:'x2_after',m:'x',g:'hot',name:'事後時光',qs:`
+2事後抱著聊天，不急著起床
+2事後幫對方準備水和小點心
+2事後一起叫宵夜
+2事後放一首我們的歌，靜靜躺著
+2結束後說一句謝謝對方的話
+2事後幫對方輕輕抓背
+2事後一起換床單
+2事後一起躺著看一集影集
+2事後聊聊下次想試什麼
+2事後不碰手機，專心陪對方
+2隔天傳訊息回味昨晚
+2事後一起吃一支冰淇淋
+2事後讓對方枕在我胸口睡著
+2事後幫對方蓋好被子再睡
+3休息一下再來第二回合
+3第二回合換個完全不同的節奏
+3結束後繼續溫柔地親吻撫摸
+2事後用溫毛巾幫對方擦身體`},
+{id:'x2_timeplace',m:'x',g:'hot',name:'換個時間地點',qs:`
+2請一天假，整天待在床上
+2週末關掉手機，整天不出門
+3午休時間溜回家一趟
+3一進家門就忍不住開始
+3在書桌上
+3在洗衣機上
+3在餐桌上
+3在地板的毛毯上
+3在下大雨的午後
+3颱風天窩在家一整天
+3跨年倒數的那一刻
+3生日那晚壽星說了算
+3在搖晃的吊床上
+3在衣帽間裡
+3在租來的遊艇船艙裡
+3在山上小木屋的壁爐前
+3在對方出差回來的那一晚
+3挑戰連續七天每天一次`}
+];
+const SPEEDS=[['fast','快',1000],['mid','標準',3000],['slow','慢',5000]];
+const autoMs=()=>(SPEEDS.find(x=>x[0]===S.speed)||SPEEDS[1])[2];
+const LVN={1:'輕鬆',2:'心跳',3:'限制級'};
+const MODES=[{id:'know',name:'認識',d:'從喜好開始，多認識彼此'},{id:'date',name:'約會',d:'想一起做的事，讓關係升溫'},{id:'spicy',name:'限制級',d:'只聊色色的話題，18+'}];
+// 認識：標 k 的類別、只有輕鬆題；約會：標 d 的類別、輕鬆和心跳；限制級：親密類加上其他類別的限制級題
+const inMode=(q,m)=>m==='spicy'?(q.cat.g==='hot'||q.lv===3):q.cat.g!=='hot'&&q.lv<3&&q.cat.m.includes(m==='know'?'k':'d')&&(m!=='know'||q.lv===1);
+const PICK=['不要','不確定','想！'];
+const DEF=['甲方','乙方'];
+const GOAL=8,MAXV=3,ROUTE_EVERY=5,MIX_N=12;
+let advT=null;
+// 每個情境對應一種票
+const TYPE={eat:'rc',date:'mv',trip:'bp',life:'tr',sweet:'am',dare:'cc',us:'pc',hot:'hk'};
+const KIND={rc:'發票',mv:'電影票',bp:'登機證',tr:'車票',am:'樂園票',cc:'演唱會票',pc:'明信片',hk:'房卡'};
+const CODES=['LUV','YES','HUG','FUN','JOY','SKY','SUN','KIS'],ROOMS=['520','1314','0214','1102','0707','1225'];
+const Q=[],QI={};
+CATS.forEach(c=>c.qs.trim().split('\n').forEach((l,i)=>{const q={id:c.id+'-'+i,cat:c,lv:+l[0],t:l.slice(1).trim()};Q.push(q);QI[q.id]=q}));
+
+const KEY='shuohao-v1';
+let S={answers:{},done:{},names:['',''],mode:'date',off:[],order:'sync',face:true,gentle:true,sound:true,speed:'mid',tut:0,plan:{},memo:{},round:null};
+try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{}
+// 舊版用 groups 記開啟的大類，換算成關掉的細項
+if(S.groups){S.off=CATS.filter(c=>!S.groups.includes(c.g)).map(c=>c.id);delete S.groups}
+let ref=null,saveT,chain=Promise.resolve(),storeMode='這台手機';
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch{}
+  if(!ref)return;
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{const d=JSON.parse(JSON.stringify(S));chain=chain.then(()=>ref.set(d)).catch(()=>{})},600);
+}
+// ponytail: 帳號紀錄與本機紀錄用聯集合併，所以在一台手機清除紀錄，另一台的舊紀錄可能會再合併回來
+(async()=>{
+  if(!window.claude?.use)return;
+  const [db,user]=await Promise.all([claude.use('db'),claude.use('user')]);
+  const uid=db&&user?await user.id():null;
+  if(!uid)return;
+  try{
+    // db 傳回的資料是凍結的，複製一份才能修改裡面的陣列
+    const r=db.doc('data/users/'+uid+'/state'),snap=await r.get(),d=snap.exists?JSON.parse(JSON.stringify(snap.data())):{};
+    const merged={...S,...d,answers:{...d.answers,...S.answers},done:{...d.done,...S.done},plan:{...d.plan,...S.plan},memo:{...d.memo,...S.memo}};
+    const changed=JSON.stringify(merged)!==JSON.stringify(d);
+    S=merged;ref=r;storeMode='你的帳號';
+    if(changed)save();
+    if(view!=='play')render();
+  }catch{}
+})();
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// 沒設名字（或還是舊的預設甲方乙方）就回傳空字串，畫面改用「你／對方」
+const nm=p=>{const n=(S.names[p]||'').trim();return n&&!DEF.includes(n)?esc(n):''};
+const other=p=>nm(1-p)||'對方';
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const hh=s=>[...s].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
+const pad=n=>String(n).padStart(2,'0');
+const NOW=new Date(),DATE=`${NOW.getFullYear()}.${pad(NOW.getMonth()+1)}.${pad(NOW.getDate())}`;
+const pool=()=>Q.filter(q=>inMode(q,S.mode)&&!S.off.includes(q.cat.id));
+const known=()=>Object.entries(S.answers).filter(([id])=>QI[id]);
+const wishes=()=>known().filter(([,a])=>a[0]>0&&a[1]>0&&a.includes(2));
+const talks=()=>known().filter(([,a])=>a.includes(0)&&a.includes(2));
+// pt：1 = 集點卡蓋一個章，-1 = 作廢一張
+function verdict(a){
+  if(a[0]+a[1]===4)return{k:'match',t:'說好了！',tag:'說好了',ink:'說好了',c:'red',pt:1};
+  if(a.includes(2)&&a.includes(1))return{k:'ok',t:'有機會',tag:'有機會',ink:'有機會',c:'amber',pt:0};
+  if(a.includes(2))return{k:'talk',t:'有點分歧',tag:'分歧',ink:'作廢',c:'gray',pt:-1};
+  if(a[0]+a[1]===0)return{k:'nope',t:'一致拒絕，也算共識',tag:'都不要',ink:'都不要',c:'blue',pt:1};
+  if(a[0]===1&&a[1]===1)return{k:'pass',t:'都還沒想好',tag:'未定',ink:'未定',c:'gray',pt:0};
+  return{k:'pass',t:'那就算了',tag:'略過',ink:'略過',c:'gray',pt:0};
+}
+const hidden=a=>S.gentle&&(a[0]===0)!==(a[1]===0);
+
+let LF={g:'all',st:'all',sort:'plan'};
+let view='home',phase='q',cur=null,tab='wish',confirmClear=false,notice='',copied=false,optsOpen=false;
+let stamps=0,voids=0,turns=0,lastRoute=0,routes=0,bias=null,route=null,roundWins=[],fresh=false,freshV=false,mix=null,newIdx=-1,tutStep=0,tutThen=null;
+document.addEventListener('toggle',e=>{if(e.target.id==='opts')optsOpen=e.target.open},true);
+function newRound(){stamps=0;voids=0;turns=0;lastRoute=0;routes=0;bias=null;roundWins=[];phase='q'}
+
+function show(v){
+  clearTimeout(advT);
+  view=v;
+  for(const id of ['home','play','bank','list'])$('#'+id).hidden=id!==v;
+  if(v==='play')navigator.wakeLock?.request('screen').catch(()=>{});
+  render();
+  if(v!=='play')$('#'+v).scrollTop=0;
+}
+function render(){({home:rHome,play:rPlay,bank:rBank,list:rList})[view]()}
+
+function ticket(q){
+  const h=hh(q.id),c=q.cat.name,no=String(h%100000).padStart(5,'0'),lv=`<span class="lvl">${'♥'.repeat(q.lv)}</span>`;
+  const seat=`${h%30+1}${'ACDFHK'[h%6]}`,ty=TYPE[q.cat.g];
+  const [k,stub]={
+    rc:['雙人食堂・'+c,`<small>NO.</small><b>${no}</b>`],
+    mv:['雙人影城・'+c,`<small>ADMIT</small><span class="big">2</span><b>${'ABCDEFGHJK'[h%10]}${pad(h%24+1)}</b>`],
+    bp:['BOARDING PASS・'+c,`<small>✈ ${CODES[h%CODES.length]}</small><span class="big">${seat}</span>`],
+    tr:['雙人鐵路・'+c,`<small>區間車</small><span class="big">${q.lv*10}</span><small>NT$</small>`],
+    am:['雙人樂園・'+c,`<span class="big">♡</span><small>1 RIDE</small>`],
+    cc:['LIVE TOUR・'+c,`<small>區</small><span class="big">${'ABC'[h%3]}${h%4+1}</span><b>${h%30+1}-${h%40+1}</b>`],
+    pc:['寄給未來的我們・'+c,`<span class="pcs">♥</span><small>${DATE.slice(5)}</small>`],
+    hk:['HOTEL TWO・'+c,`<small>ROOM</small><span class="big">${ROOMS[h%ROOMS.length]}</span>`]
+  }[ty];
+  return `<div class="tk notch t-${ty}"><div class="main"><div class="tk-k">${k}</div><p class="q">${q.t}</p></div><div class="stub">${stub}${lv}</div></div>`;
+}
+
+const modeGroups=()=>GROUPS.filter(g=>Q.some(q=>q.cat.g===g.id&&inMode(q,S.mode)));
+function modeTabs(){
+  return `<div class="modes">${MODES.map(m=>`<button class="mode ${m.id}" data-act="mode" data-v="${m.id}" aria-pressed="${S.mode===m.id}"><b>${m.name}</b><span>${m.d}</span></button>`).join('')}</div>`;
+}
+const modeCats=g=>CATS.filter(c=>c.g===g.id&&Q.some(q=>q.cat===c&&inMode(q,S.mode)));
+function catChips(){
+  return `<div><span class="lab">情境與分類</span><div class="cgs">${modeGroups().map(g=>{const cs=modeCats(g),on=cs.filter(c=>!S.off.includes(c.id)).length;
+    return `<div class="cg"><button class="chip g" data-act="grp" data-v="${g.id}" aria-pressed="${on===cs.length}">${g.name}<small>${on}/${cs.length}</small></button><div class="chips">${cs.map(c=>`<button class="chip s" data-act="cat" data-v="${c.id}" aria-pressed="${!S.off.includes(c.id)}">${c.name}</button>`).join('')}</div></div>`}).join('')}</div></div>`;
+}
+const ORDERS=[['sync','同時翻牌','同一題兩人一起滑，馬上揭曉'],['mix','各滑各的','同一組 12 題，順序各不相同，滑完再對答案'],['pass','輪流滑','一人滑完把手機交給對方，完全看不到彼此的選擇']];
+function orderTabs(){
+  return `<div><span class="lab">怎麼玩</span><div class="seg" role="group" aria-label="怎麼玩">${ORDERS.map(([k,n])=>`<button data-act="order" data-v="${k}" aria-pressed="${S.order===k}">${n}</button>`).join('')}</div><p class="seg-d">${ORDERS.find(o=>o[0]===S.order)[2]}</p></div>`;
+}
+function rHome(){
+  const p=pool(),left=p.filter(q=>!S.answers[q.id]).length,W=wishes();
+  const R=S.round,ON=o=>({sync:'同時翻牌',mix:'各滑各的',pass:'輪流滑'})[o];
+  $('#home').innerHTML=`<div class="wrap home">
+  <div class="top-r"><button class="link" data-act="tut">怎麼玩？</button></div>
+  <div class="hero${left?' go':''}" ${left?'role="button" tabindex="0" data-act="start" aria-label="剪票入場，開始一局"':''}><div class="tk notch"><div class="main"><div class="hero-k">ADMIT TWO・雙人入場券</div><h1>互動門票</h1><p>一起滑一滑，找出你們的共識。</p><small class="hero-fine">本票限兩人同行，期限內兌換。</small></div></div>
+    <span class="stub">${left?`<b>剪票<br>入場</b><small>還有 ${left} 題</small>`:`<small>${p.length?'這個情境<br>都玩過了':'先到設定<br>選情境'}</small>`}</span></div>
+  ${notice?`<p class="notice">${notice}</p>`:''}
+  ${R?`<button class="resume" data-act="resume"><span><b>繼續上一局</b><small>${MODES.find(m=>m.id===R.mode).name}・${ON(R.order)}・共識 ${R.stamps}${R.order==='mix'?'':' / '+GOAL}</small></span><i>›</i></button>`:''}
+  <div><span class="lab">這局玩什麼</span>${modeTabs()}</div>
+  ${orderTabs()}
+  <section class="recent"><div class="recent-h"><span class="lab">最近說好的</span><span class="meta">${known().length} 題玩過</span></div>
+    ${W.length?W.slice(-3).reverse().map(([id])=>{const q=QI[id];return `<button class="ri t-${TYPE[q.cat.g]}" data-act="list"><i></i><span class="qt">${q.t}</span><span class="meta">${q.cat.name}</span></button>`}).join(''):'<p class="meta" style="margin:0">還沒有說好的事。剪票入場玩一局，兩人都想要的事會收在這裡。</p>'}</section>
+  <div class="row2"><button class="ghost" data-act="bank">瀏覽題庫</button><button class="ghost" data-act="list">我們的票夾<b>${W.length}</b></button></div>
+  <details class="opts" id="opts" ${optsOpen?'open':''}>
+    <summary><span>設定</span><span class="meta">${modeGroups().flatMap(modeCats).filter(c=>!S.off.includes(c.id)).length} 類題目・名字・玩法</span></summary>
+    <div><span class="lab">名字（可不填）</span><div class="names">
+      <label><input id="nA" maxlength="8" value="${nm(0)}" placeholder="下方玩家" aria-label="下方玩家的名字"><small>拿手機的人（下方）</small></label>
+      <label><input id="nB" maxlength="8" value="${nm(1)}" placeholder="上方玩家" aria-label="上方玩家的名字"><small>坐對面的人（上方）</small></label></div></div>
+    ${catChips()}
+    <label class="opt"><input type="checkbox" id="optFace" data-opt="face" ${S.face?'checked':''}><span><b>對坐模式</b><span>上半畫面倒過來，給坐對面的人看。並肩坐就關掉。</span></span></label>
+    <label class="opt"><input type="checkbox" id="optGentle" data-opt="gentle" ${S.gentle?'checked':''}><span><b>溫柔揭曉</b><span>只有一個人滑「不要」時，不顯示是誰。</span></span></label>
+    <label class="opt"><input type="checkbox" id="optSound" data-opt="sound" ${S.sound?'checked':''}><span><b>音效與震動</b><span>剪票、蓋章時的聲音；支援的手機會一起震動。</span></span></label>
+    <div><span class="lab">揭曉後自動下一題</span><div class="chips">${SPEEDS.map(([k,n,ms])=>`<button class="chip" data-act="speed" data-v="${k}" aria-pressed="${(S.speed||'mid')===k}">${n}・${ms/1000} 秒</button>`).join('')}</div></div>
+  </details>
+  <p class="meta">題庫共 ${Q.length} 題・已經玩過 ${known().length} 題・紀錄存在${storeMode}</p></div>`;
+  notice='';
+}
+
+function startMix(){
+  const all=pool(),fresh2=shuffle(all.filter(q=>!S.answers[q.id])),deck=(fresh2.length?fresh2:shuffle(all)).slice(0,MIX_N);
+  if(!deck.length){notice='這個情境沒有題目，先到設定打開一些分類。';show('home');return}
+  const idx=deck.map((_,i)=>i),ord=[shuffle(idx),shuffle(idx)];
+  if(deck.length>1&&ord[0].join()===ord[1].join())ord[1].push(ord[1].shift());
+  mix={deck,ord,pos:[0,0],ans:deck.map(()=>[null,null])};
+  phase='mix';cur=null;show('play');
+}
+function chooseMix(p,v){
+  const i=mix.ord[p][mix.pos[p]];
+  if(i==null)return;
+  mix.ans[i][p]=v;mix.pos[p]++;
+  const a=mix.ans[i];
+  if(a[0]!=null&&a[1]!=null){
+    S.answers[mix.deck[i].id]=[...a];save();
+    const r=verdict(a);
+    if(r.pt>0)stamps++;else if(r.pt<0)voids++;
+    newIdx=i;
+  }
+  const end=k=>mix.pos[k]>=mix.deck.length;
+  if(end(0)&&end(1)){paintHalf(0);paintHalf(1);sfx('win');announce('兩個人都滑完了，對答案')}else paintHalf(p);
+  paintMid();
+}
+function mixSummary(){
+  const rows=mix.deck.map((q,i)=>({q,a:mix.ans[i],v:verdict(mix.ans[i])})).sort((x,y)=>y.v.pt-x.v.pt);
+  return `<div class="sum"><div class="sum-h"><b>對答案</b><span>共識 ${rows.filter(r=>r.v.pt>0).length} / ${rows.length}</span></div>
+    <ol class="sum-l">${rows.map(({q,a,v})=>`<li class="t-${TYPE[q.cat.g]}"><i></i><span class="qt">${q.t}</span><span class="st st-${hidden(a)?'talk':v.k}">${hidden(a)?'沒對上':v.tag}</span></li>`).join('')}</ol>
+    <div class="mini"><button class="mb" data-act="list">看票夾</button><button class="mb mb2" data-act="restart">再來一局</button></div></div>`;
+}
+// 音效用 Web Audio 現場合成，不需要音檔；震動只有支援的手機（多為 Android）才有
+let AC=null,OUT=null;
+function sfx(kind){
+  if(!S.sound)return;
+  navigator.vibrate?.({cut:8,tear:12,stamp:15,match:[18],void:30,win:[15,60,15]}[kind]);
+  try{
+    if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();OUT=AC.createGain();OUT.gain.value=.3;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;OUT.connect(lp).connect(AC.destination)}
+    const t0=AC.currentTime;
+    // 紙張、印章的質感：濾過的雜訊＋低頻悶響，不用旋律音
+    const noise=(dur,freq,q,vol,at=0)=>{const n=AC.sampleRate*dur|0,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const src=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();src.buffer=b;f.type='bandpass';f.frequency.value=freq;f.Q.value=q;g.gain.value=vol;src.connect(f).connect(g).connect(OUT);src.start(t0+at)};
+    const thud=(f1,f2,dur,vol,at=0)=>{const o=AC.createOscillator(),g=AC.createGain(),t=t0+at;o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(OUT);o.start(t);o.stop(t+dur)};
+    if(kind==='cut')noise(.06,3200,.9,.5);
+    else if(kind==='tear'){noise(.28,2200,.5,.35);noise(.12,4200,1.2,.2,.12)}
+    else if(kind==='stamp'){thud(110,50,.12,.35);noise(.04,900,1,.25)}
+    else if(kind==='match'){thud(120,45,.16,.5);noise(.05,800,.9,.35)}
+    else if(kind==='void'){thud(80,55,.14,.25);noise(.1,350,.7,.3)}
+    else if(kind==='win'){thud(120,45,.16,.45);noise(.05,800,.9,.3);thud(120,45,.16,.45,.2);noise(.05,800,.9,.3,.2)}
+  }catch{}
+}
+const announce=t=>{$('#live').textContent=t};
+const who2=p=>nm(p)||['玩家一','玩家二'][p];
+const solo=()=>S.order==='pass'&&phase!=='mix';
+const swipeCard=(p,q)=>`<button class="hint h0" data-act="pick" data-p="${p}" data-v="0">←不要</button><button class="hint h2" data-act="pick" data-p="${p}" data-v="2">→想要</button><button class="hint h1" data-act="pick" data-p="${p}" data-v="1">不確定 ↓</button>
+      <div class="tkw" data-card="${p}">${ticket(q)}${INKS}</div>`;
+// 每次畫面變動就把這一局存起來，離開再回來可以接著玩
+function keepRound(){
+  S.round=phase==='win'||phase==='over'?null:{phase,order:S.order,mode:S.mode,stamps,voids,turns,lastRoute,routes,bias,roundWins,route,
+    cur:cur&&{id:cur.q.id,picks:cur.picks,first:cur.first,handed:cur.handed},
+    mix:phase==='mix'&&mix?{deck:mix.deck.map(q=>q.id),ord:mix.ord,pos:mix.pos,ans:mix.ans}:null};
+  save();
+}
+function resume(){
+  const r=S.round;
+  if(!r)return;
+  ({stamps,voids,turns,lastRoute,routes,bias,roundWins,route}=r);
+  S.order=r.order;S.mode=r.mode;phase=r.phase;
+  cur=r.cur&&QI[r.cur.id]?{q:QI[r.cur.id],picks:[...r.cur.picks],first:r.cur.first||0,handed:!!r.cur.handed}:null;
+  mix=r.mix?{deck:r.mix.deck.map(id=>QI[id]),ord:r.mix.ord,pos:r.mix.pos,ans:r.mix.ans}:null;
+  if((phase==='q'&&!cur)||(phase==='mix'&&(!mix||mix.deck.some(q=>!q)))){newRound();draw();return}
+  show('play');
+}
+const TUT=[
+  {h:'手機平放在你們中間',p:'面對面坐，畫面上下各一半，上半是倒過來給對面看的。並肩坐可以在設定關掉，不想被看到就選「輪流滑」。',art:'<div class="tp-phone"><i class="tp-top">對方</i><i class="tp-bot">你</i></div>'},
+  {h:'各滑自己那張票',p:'右滑想要、左滑不要、下滑不確定。兩個人都滑完，才會一起翻牌。',art:'<div class="tp-swipe"><div class="tp-tk">一起去看日出</div><span class="ink round c-red tp-ink">想！</span></div><div class="tp-dirs"><span>← 不要</span><span>↓ 不確定</span><span>想要 →</span></div>'},
+  {h:'都想要，就收進票夾',p:`兩人都想要（或都不要）就是共識，蓋一個章。集滿 ${GOAL} 個過關，作廢 ${MAXV} 張散場。說好的事會收進票夾，之後可以排日期。`,art:'<div class="tp-punch"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><b>說好了</b></div>'}
+];
+function rTut(){
+  const t=TUT[tutStep],last=tutStep===TUT.length-1;
+  $('#tut').innerHTML=`<div class="tut-card"><div class="tut-art">${t.art}</div><h2>${t.h}</h2><p>${t.p}</p>
+    <div class="tut-dots">${TUT.map((_,i)=>`<i class="${i===tutStep?'on':''}"></i>`).join('')}</div>
+    <div class="tut-act"><button class="link" data-act="tutdone">略過</button><button class="next" data-act="${last?'tutdone':'tutnext'}">${last?'開始玩':'下一步'}</button></div></div>`;
+}
+function openTut(then){tutStep=0;tutThen=then;$('#tut').hidden=false;rTut();$('#tut .next').focus()}
+function startRound(){newRound();S.order==='mix'?startMix():draw()}
+function rPlay(){
+  $('#play').classList.toggle('solo',solo());
+  $('#play').classList.toggle('face',S.face&&!solo());
+  paintHalf(0);paintHalf(1);paintMid();
+}
+const SYM=['✕','～','♥'];
+function paintMid(){
+  $('[data-act="skip"]').hidden=phase==='mix';
+  if(phase==='mix'){
+    $('#punch').innerHTML=`<span class="slots">${mix.ans.map((a,i)=>{if(a[0]==null||a[1]==null)return '<i class="slot"></i>';const pt=verdict(a).pt;return `<i class="slot ${pt>0?'on':pt<0?'vx':'nt'}${i===newIdx?' new':''}"></i>`}).join('')}</span>`;
+    $('#punch').setAttribute('aria-label',`已對完 ${mix.ans.filter(a=>a[0]!=null&&a[1]!=null).length} / ${mix.deck.length}，共識 ${stamps}`);
+    newIdx=-1;return;
+  }
+  const shown=phase==='q'&&cur&&cur.picks.every(x=>x!=null)&&!hidden(cur.picks);
+  $('#punch').innerHTML=(shown?`<i class="pk pka">${SYM[cur.picks[0]]}</i>`:'')
+    +`<span class="slots">${Array.from({length:GOAL},(_,i)=>`<i class="slot${i<stamps?' on':''}${fresh&&i===stamps-1?' new':''}"></i>`).join('')}</span>`
+    +`<span class="voids">${Array.from({length:MAXV},(_,i)=>`<i class="vd${i<voids?' on':''}${freshV&&i===voids-1?' new':''}"></i>`).join('')}</span>`
+    +(shown?`<i class="pk pkb">${SYM[cur.picks[1]]}</i>`:'');
+  $('#punch').setAttribute('aria-label',`共識 ${stamps}/${GOAL}，作廢 ${voids}/${MAXV}`);
+  fresh=freshV=false;
+}
+const INKS='<span class="ink round c-red">想！</span><span class="ink c-gray">不要</span><span class="ink c-blue">不確定</span>';
+function paintHalf(p){
+  if(p&&solo())return;
+  const el=$(p?'#hB':'#hA');
+  let html;
+  if(phase==='win')html=`<div class="tkw"><div class="tk t-cert"><div class="cert-k">CERTIFICATE・共識達成證明</div><p class="q">集滿 ${GOAL} 個共識！</p><ul class="cert-list">${roundWins.slice(-3).map(id=>`<li>${QI[id].t}</li>`).join('')}</ul></div><span class="ink round corner c-red on">達成</span></div>
+    <div class="mini"><button class="mb" data-act="list">看票夾</button><button class="mb mb2" data-act="restart">再來一局</button></div>`;
+  else if(phase==='over')html=`<div class="tkw"><div class="tk t-void"><div class="cert-k">作廢 ${MAXV} 張</div><p class="q">這局散場</p><p class="meta" style="margin:.3em 0 0">共識 ${stamps}/${GOAL}。去看看剛剛哪幾題沒對上？</p></div></div>
+    <div class="mini"><button class="mb" data-act="talklist">看想聊聊</button><button class="mb mb2" data-act="restart">再來一局</button></div>`;
+  else if(phase==='mix'){
+    const i=mix.pos[p],n=mix.deck.length;
+    if(i>=n&&mix.pos[1-p]>=n)html=mixSummary();
+    else if(i>=n)html=`<div class="tkw down"><div class="tk t-void"><p class="q">滑完了</p><p class="meta" style="margin:.3em 0 0">等${other(p)}滑完，一起對答案</p></div></div>`;
+    else html=`<div class="who"><b>${nm(p)}</b><span>${i+1} / ${n}</span></div>${swipeCard(p,mix.deck[mix.ord[p][i]])}`;
+  }
+  else if(phase==='route'&&solo())html=`<p class="ask">${who2(route.picker)}，選下一站</p><div class="hand">${route.opts.map((o,i)=>`<button class="rc t-${o.ty}" data-act="route" data-v="${i}"><small>下一站</small><b>${o.t}</b><span>${o.d}</span></button>`).join('')}</div>`;
+  else if(phase==='route')html=p===route.picker
+    ?`<p class="ask">${nm(p)?nm(p)+'，':''}換你選下一站</p><div class="hand">${route.opts.map((o,i)=>`<button class="rc t-${o.ty}" data-act="route" data-v="${i}"><small>下一站</small><b>${o.t}</b><span>${o.d}</span></button>`).join('')}</div>`
+    :`<div class="tkw down"><div class="tk t-void"><p class="q">${other(p)}正在選下一站</p></div></div>`;
+  else if(solo()){
+    const q=cur.q,pk=cur.picks,f=cur.first,s2=1-f,t=pk[f]==null?f:s2;
+    let body;
+    if(pk[0]!=null&&pk[1]!=null)body=reveal();
+    else if(pk[f]!=null&&!cur.handed)body=`<div class="tkw down"><div class="tk t-void"><p class="q">交給${who2(s2)}</p><p class="meta" style="margin:.3em 0 0">${who2(f)}滑好了，把手機交給對方，別偷看喔。</p></div></div><button class="next" data-act="handoff">我是${who2(s2)}，開始</button>`;
+    else body=swipeCard(t,q);
+    html=`<div class="who"><b>${pk[0]!=null&&pk[1]!=null?'一起看結果':who2(t)+' 的回合'}</b><span>${LVN[q.lv]}${bias?'・下一站：'+bias.t:''}</span></div>${body}`;
+  }
+  else{
+    const q=cur.q,pk=cur.picks;
+    let body;
+    if(pk[0]!=null&&pk[1]!=null)body=reveal();
+    else if(pk[p]!=null)body=`<div class="tkw down">${ticket(q)}<span class="ink c-gray on">已剪票</span></div><button class="ic" data-act="unpick" data-p="${p}" aria-label="重選">↺</button>`;
+    else body=swipeCard(p,q);
+    html=`<div class="who"><b>${nm(p)}</b><span>${LVN[q.lv]}${bias?'・下一站：'+bias.t:''}</span></div>${body}`;
+  }
+  el.innerHTML=html;
+  el.querySelectorAll('[data-card]').forEach(c=>bindCard(+c.dataset.card));
+  if(view==='play')keepRound();
+}
+function reveal(){
+  const a=cur.picks,v=verdict(a);
+  return `<div class="tkw rv" data-act="next">${ticket(cur.q)}<span class="ink ${v.c==='red'?'round ':''}c-${v.c} on">${hidden(a)?'沒對上':v.ink}</span></div>
+    <button class="nx" data-act="next" aria-label="下一題" style="--auto:${autoMs()}ms"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20"/></svg>›</button>`;
+}
+function choose(p,v){
+  if(phase==='mix')return chooseMix(p,v);
+  if(phase!=='q'||!cur||cur.picks[p]!=null)return;
+  cur.picks[p]=v;
+  if(cur.picks.every(x=>x!=null)){
+    S.answers[cur.q.id]=[...cur.picks];save();
+    const r=verdict(cur.picks);
+    if(r.pt>0){stamps++;fresh=true;if(r.k==='match')roundWins.push(cur.q.id)}
+    else if(r.pt<0){voids++;freshV=true}
+    turns++;
+    paintHalf(0);paintHalf(1);paintMid();
+    sfx(r.pt>0?'match':r.pt<0?'void':'stamp');
+    announce(hidden(cur.picks)?'這題沒對上':`${r.t}　${who2(0)}${PICK[cur.picks[0]]}，${who2(1)}${PICK[cur.picks[1]]}`);
+    clearTimeout(advT);advT=setTimeout(()=>{if(view==='play'&&phase==='q')next()},autoMs());
+  }else paintHalf(solo()?0:p);
+}
+function routeOpts(){
+  const ls=[...new Set(pool().map(q=>q.lv))].sort(),o=[];
+  if(ls.length>1){
+    const top=ls.at(-1);
+    o.push({t:'大膽一點',d:`接下來抽「${LVN[top]}」題`,lv:top,ty:top===3?'hk':'cc'});
+    if(ls[0]===1)o.push({t:'輕鬆一點',d:'回到輕鬆的題目',lv:1,ty:'am'});
+  }
+  shuffle(modeGroups().filter(g=>g.id!==bias?.g&&pool().some(q=>q.cat.g===g.id))).slice(0,2).forEach(g=>o.push({t:'聊'+g.name,d:`接下來都是「${g.name}」`,g:g.id,ty:TYPE[g.id]}));
+  return shuffle([...shuffle(o).slice(0,2),{t:'交給命運',d:'不限方向，隨便抽',ty:'pc'}]);
+}
+function next(){
+  clearTimeout(advT);
+  if(stamps>=GOAL||voids>=MAXV){phase=stamps>=GOAL?'win':'over';sfx(phase==='win'?'win':'void');announce(phase==='win'?`集滿 ${GOAL} 個共識，過關`:'作廢三張，這局散場');rPlay();keepRound();return}
+  if(turns-lastRoute>=ROUTE_EVERY){
+    lastRoute=turns;
+    const opts=routeOpts();
+    if(opts.length>1){phase='route';route={picker:routes++%2,opts};rPlay();return}
+  }
+  draw();
+}
+// 拖曳方向以玩家自己的視角計算：對坐時上半畫面是倒的，位移要反過來
+const dirOf=(dx,dy,t)=>Math.abs(dx)>=t&&Math.abs(dx)>dy?(dx>0?2:0):dy>=t&&dy>Math.abs(dx)?1:null;
+function bindCard(p){
+  const el=$(`[data-card="${p}"]`);
+  if(!el)return;
+  const sign=S.face&&p===1&&!solo()?-1:1,T=80,[s2,s0,s1]=el.querySelectorAll('.ink');
+  let id=null,x0=0,y0=0,dx=0,dy=0;
+  const reset=()=>{el.classList.add('back');el.style.transform='';s2.style.opacity=s0.style.opacity=s1.style.opacity=0};
+  el.addEventListener('pointerdown',e=>{
+    if(id!==null)return;
+    id=e.pointerId;x0=e.clientX;y0=e.clientY;dx=dy=0;
+    el.setPointerCapture(id);el.classList.remove('back');
+  });
+  el.addEventListener('pointermove',e=>{
+    if(e.pointerId!==id)return;
+    dx=(e.clientX-x0)*sign;dy=(e.clientY-y0)*sign;
+    el.style.transform=`translate(${dx}px,${Math.max(dy,-24)}px) rotate(${dx/14}deg)`;
+    const h=Math.abs(dx)>dy;
+    s2.style.opacity=h&&dx>0?Math.min(.92,dx/T):0;
+    s0.style.opacity=h&&dx<0?Math.min(.92,-dx/T):0;
+    s1.style.opacity=!h&&dy>0?Math.min(.92,dy/T):0;
+  });
+  el.addEventListener('pointerup',e=>{
+    if(e.pointerId!==id)return;
+    id=null;
+    const v=dirOf(dx,dy,T);
+    if(v==null)return reset();
+    el.classList.add('fly');
+    el.style.transform=v===1?`translate(${dx}px,520px)`:`translate(${v?520:-520}px,${dy}px) rotate(${v?28:-28}deg)`;
+    el.style.opacity=0;
+    setTimeout(()=>choose(p,v),220);
+  });
+  el.addEventListener('pointercancel',e=>{if(e.pointerId===id){id=null;reset()}});
+}
+
+function rBank(){
+  const p=pool(),by={};
+  p.forEach(q=>(by[q.cat.id]??=[]).push(q));
+  $('#bank').innerHTML=`<div class="wrap">
+  <header class="bar-h"><button class="back" data-act="home">‹ 返回</button><h2>題庫</h2><span class="meta">${p.length} 題</span></header>
+  ${modeTabs()}
+  ${catChips()}
+  <p class="meta" style="margin:0">♥ 輕鬆・♥♥ 心跳・♥♥♥ 限制級。點任何一題就直接開始。</p>
+  <div class="sheet">${CATS.filter(c=>by[c.id]).map(c=>{const qs=by[c.id],done=qs.filter(q=>S.answers[q.id]).length;
+    return `<details><summary><span class="kind t-${TYPE[c.g]}">${KIND[TYPE[c.g]]}</span><span class="nm">${c.name}</span><span class="meta">${done}/${qs.length}</span></summary>${qs.map(row).join('')}</details>`}).join('')||'<p class="empty">這個篩選沒有題目，換個尺度或情境。</p>'}</div></div>`;
+}
+function row(q){
+  const a=S.answers[q.id],v=a&&verdict(a);
+  return `<button class="qrow" data-act="play" data-id="${q.id}"><span class="pip">${'♥'.repeat(q.lv)}</span><span class="qt">${q.t}</span>${v?`<span class="st st-${v.k}">${v.tag}</span>`:''}</button>`;
+}
+function rList(){
+  const rank=([id,a])=>S.done[id]?3e13+(S.done[id]||0):S.plan[id]?Date.parse(S.plan[id]):2e13-(a[0]+a[1]);
+  const ALL=wishes(),T=talks(),order=Object.keys(S.answers);
+  // 篩選：票種、狀態；排序：排程優先／最新說好／兩人都想優先（已使用的永遠在最後）
+  const key={plan:rank,new:([id])=>(S.done[id]?1e9:0)-order.indexOf(id),both:([id,a])=>(S.done[id]?1e9:0)-(a[0]+a[1])*1e5-order.indexOf(id)}[LF.sort];
+  const W=ALL.filter(([id])=>(LF.g==='all'||QI[id].cat.g===LF.g)&&({all:1,todo:!S.done[id]&&!S.plan[id],plan:!S.done[id]&&S.plan[id],done:S.done[id]}[LF.st])).sort((x,y)=>key(x)-key(y));
+  const sel=(k,opts)=>`<select data-lf="${k}" aria-label="${{g:'票種',st:'狀態',sort:'排序'}[k]}">${opts.map(([v,n])=>`<option value="${v}" ${LF[k]===v?'selected':''}>${n}</option>`).join('')}</select>`;
+  const tools=tab==='wish'&&ALL.length?`<div class="lf">${sel('g',[['all','全部票種'],...GROUPS.filter(g=>ALL.some(([id])=>QI[id].cat.g===g.id)).map(g=>[g.id,g.name+'・'+KIND[TYPE[g.id]]])])}${sel('st',[['all','全部狀態'],['todo','還沒安排'],['plan','已排日期'],['done','已使用']])}${sel('sort',[['plan','排程優先'],['new','最新說好'],['both','兩人都想優先']])}</div>`:'';
+  const body=tab==='wish'
+    ?(W.map(([id,a],i)=>{const q=QI[id];return `${S.done[id]&&!(i&&S.done[W[i-1][0]])?'<p class="sec">已使用的票根</p>':''}<div class="li${S.done[id]?' done':''}"><span class="chk"><input type="checkbox" id="d-${id}" data-done="${id}" ${S.done[id]?'checked':''} aria-label="做到了，蓋上已使用"><small>${S.done[id]?'已使用':'做到了'}</small></span><label for="d-${id}"><span class="qt">${q.t}</span><span class="meta">${q.cat.name}・${a[0]+a[1]===4?'兩個都想':'一個還不確定'}${S.done[id]?'・已使用'+(S.done[id]>1?' '+new Date(S.done[id]).toLocaleDateString('zh-TW'):''):''}</span></label><span class="kind t-${TYPE[q.cat.g]}">${KIND[TYPE[q.cat.g]]}</span></div>
+      <div class="li-x">${S.done[id]?`<input class="memo" data-memo="${id}" maxlength="60" placeholder="留一句回憶" aria-label="留一句回憶" value="${esc(S.memo[id]||'')}">`:`<label class="plan"><span>排日期</span><input type="date" data-plan="${id}" value="${S.plan[id]||''}" aria-label="排日期"></label>${S.plan[id]&&q.cat.g!=='hot'&&q.lv<3?`<a class="link" href="${gcal(q,S.plan[id])}" target="_blank" rel="noopener">加到 Google 日曆</a>`:''}`}</div>`}).join('')||`<p class="empty">${ALL.length?'沒有符合的票，換個篩選看看。':'票夾還是空的。去玩一局吧。'}</p>`)
+    :(T.map(([id])=>row(QI[id])).join('')||'<p class="empty">目前沒有分歧。點一題可以重新回答。</p>');
+  $('#list').innerHTML=`<div class="wrap">
+  <header class="bar-h"><button class="back" data-act="home">‹ 返回</button><h2>我們的票夾</h2></header>
+  <div class="tabs"><button data-act="tab" data-v="wish" aria-pressed="${tab==='wish'}">想一起做 ${ALL.length}</button><button data-act="tab" data-v="talk" aria-pressed="${tab==='talk'}">想聊聊 ${T.length}</button></div>
+  ${tools}
+  ${tab==='wish'&&ALL.length&&!ALL.some(([id])=>S.done[id])?'<p class="tip">一起做完其中一件事，就點左邊的「做到了」，這張票會蓋上「已使用」，收進票根區。</p>':''}
+  <div class="sheet">${body}</div>
+  ${tab==='wish'&&W.length?`<button class="ghost" data-act="copy">${copied?'已複製':'複製清單文字'}</button>`:''}
+  <div id="copyBox"></div>
+  <button class="ghost danger" data-act="clear">${confirmClear?'再按一次，清除所有紀錄':'清除所有紀錄'}</button></div>`;
+  copied=false;
+}
+const gcal=(q,d)=>{const n=new Date(d+'T00:00:00');n.setDate(n.getDate()+1);return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(q.t)}&dates=${d.replace(/-/g,'')}/${n.getFullYear()}${pad(n.getMonth()+1)}${pad(n.getDate())}`};
+function listText(){return '我們說好要一起做的事\n'+wishes().map(([id])=>(S.done[id]?'☑ ':'☐ ')+QI[id].t).join('\n')}
+function draw(ex){
+  const base=pool().filter(q=>!S.answers[q.id]&&q.id!==ex);
+  const fit=bias?base.filter(q=>(!bias.lv||q.lv===bias.lv)&&(!bias.g||q.cat.g===bias.g)):[];
+  const c=fit.length?fit:base;
+  if(!c.length){notice='這個範圍的題目都玩過了。換個尺度或情境，或到題庫挑題重玩。';show('home');return}
+  phase='q';
+  cur={q:c[Math.random()*c.length|0],picks:[null,null],first:turns%2,handed:false};
+  show('play');
+}
+const toggle=(arr,v)=>{const i=arr.indexOf(v);i<0?arr.push(v):arr.splice(i,1)};
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(!b||b.disabled)return;
+  const {act,v,p,id}=b.dataset;
+  if(act!=='clear')confirmClear=false;
+  if(act==='home')show('home');
+  else if(act==='bank')show('bank');
+  else if(act==='list'){tab='wish';show('list')}
+  else if(act==='talklist'){tab='talk';show('list')}
+  else if(act==='mode'){S.mode=v;save();render()}
+  else if(act==='grp'){const ids=modeCats(GROUPS.find(g=>g.id===v)).map(c=>c.id),allOn=ids.every(i=>!S.off.includes(i));S.off=allOn?[...new Set([...S.off,...ids])]:S.off.filter(i=>!ids.includes(i));save();render()}
+  else if(act==='cat'){toggle(S.off,v);save();render()}
+  else if(act==='order'){S.order=v;save();render()}
+  else if(act==='speed'){S.speed=v;save();render()}
+  else if(act==='start'){
+    const h=$('.hero');
+    if(h.classList.contains('tearing'))return;
+    const go=()=>S.tut?startRound():openTut(startRound);
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches)return go();
+    h.classList.add('tearing');sfx('tear');
+    setTimeout(()=>{h.classList.remove('tearing');go()},650);
+  }
+  else if(act==='restart')startRound();
+  else if(act==='resume')resume();
+  else if(act==='tut')openTut(null);
+  else if(act==='tutnext'){tutStep++;rTut()}
+  else if(act==='tutdone'){$('#tut').hidden=true;S.tut=1;save();const f=tutThen;tutThen=null;f?.()}
+  else if(act==='handoff'){cur.handed=true;paintHalf(0)}
+  else if(act==='next')next();
+  else if(act==='skip'){if(phase==='q'||phase==='route')draw(cur?.q.id)}
+  else if(act==='route'){const o=route.opts[+v];bias=o.lv||o.g?o:null;draw()}
+  else if(act==='play'){if(phase==='win'||phase==='over')newRound();cur={q:QI[id],picks:[null,null],first:turns%2,handed:false};phase='q';show('play')}
+  else if(act==='pick')choose(+p,+v);
+  else if(act==='unpick'){cur.picks[+p]=null;paintHalf(+p)}
+  else if(act==='tab'){tab=v;render()}
+  else if(act==='copy'){
+    const txt=listText();
+    navigator.clipboard.writeText(txt).then(()=>{copied=true;render()}).catch(()=>{$('#copyBox').innerHTML='<textarea id="copyTa" readonly></textarea>';const ta=$('#copyTa');ta.value=txt;ta.select()});
+  }
+  else if(act==='clear'){
+    if(confirmClear){S.answers={};S.done={};confirmClear=false;save()}else confirmClear=true;
+    render();
+  }
+});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList?.contains('hero')){e.preventDefault();e.target.click()}});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='nA'||t.id==='nB'){S.names[t.id==='nA'?0:1]=t.value.trim();save()}
+  if(t.dataset.memo){S.memo[t.dataset.memo]=t.value;save()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.opt){S[t.dataset.opt]=t.checked;save()}
+  if(t.dataset.lf){LF[t.dataset.lf]=t.value;render()}
+  if(t.dataset.done){
+    const id=t.dataset.done;
+    if(t.checked){
+      // 先蓋章、再滑走，最後才重新排序到「已使用」
+      S.done[id]=Date.now();save();sfx('stamp');
+      const li=t.closest('.li');li.classList.add('using');li.nextElementSibling?.classList.add('using');
+      setTimeout(()=>{if(view==='list')render()},1100);
+    }else{delete S.done[id];save();render()}
+  }
+  if(t.dataset.plan!==undefined){
+    // 不重畫整頁：手機的日期選擇器每轉一格都會觸發 change，重畫會把選擇器關掉
+    const id=t.dataset.plan,q=QI[id],box=t.closest('.li-x');
+    t.value?S.plan[id]=t.value:delete S.plan[id];save();
+    box.querySelector('a')?.remove();
+    if(t.value&&q.cat.g!=='hot'&&q.lv<3)box.insertAdjacentHTML('beforeend',`<a class="link" href="${gcal(q,t.value)}" target="_blank" rel="noopener">加到 Google 日曆</a>`);
+  }
+});
+render();
+</script>
+</body>
+</html>
