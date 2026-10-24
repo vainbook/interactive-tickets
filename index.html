@@ -234,8 +234,19 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .sl img{border-radius:6px;flex:none}
 .sl i{font-style:normal;margin-left:auto}
 .coach .ad{font-size:.62rem;padding:0 5px;border-radius:4px;border:1px solid color-mix(in srgb,var(--line) 25%,transparent)}
-.coach a{font-size:.72rem;color:var(--muted);text-decoration:underline}
-.coach a:first-of-type{margin-left:auto}
+.coach{flex:1 1 100%}
+.coach summary{list-style:none;cursor:pointer}
+.coach summary::-webkit-details-marker{display:none}
+details.coach summary::after,details.coach[open] summary::after{content:none}
+.coach[open] summary i{transform:rotate(45deg)}
+.coach summary i{transition:transform .2s}
+.coach-body{display:flex;flex-direction:column;gap:4px;margin-top:8px;padding:12px 14px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);animation:coachIn .2s ease-out}
+.coach-body b{font-family:var(--display);font-weight:400;font-size:1.02rem}
+.coach-body small{font-size:.78rem;color:var(--muted);line-height:1.5}
+.coach-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.coach-links a{font-size:.78rem;padding:5px 11px;border-radius:999px;text-decoration:none;color:var(--fg);border:1px solid color-mix(in srgb,var(--line) 40%,transparent)}
+.coach-links a:first-child{background:#06C755;border-color:#06C755;color:#fff}
+@keyframes coachIn{from{opacity:0;transform:translateY(-4px)}}
 html:not([lang^=zh]) .mode b{font-size:.86rem;overflow-wrap:anywhere;hyphens:auto}
 .tk .q2{margin:.15em 0 0;font-size:.8em;line-height:1.35;opacity:.75}
 .l2m{margin-top:8px}
@@ -1668,7 +1679,8 @@ const hidden=a=>S.gentle&&(a[0]===0)!==(a[1]===0);
 let LF={g:'all',st:'all',sort:'plan'};
 let view='home',phase='q',cur=null,tab='wish',confirmClear=false,notice='',copied=false,optsOpen=false;
 let stamps=0,voids=0,turns=0,lastRoute=0,routes=0,bias=null,route=null,roundWins=[],fresh=false,freshV=false,mix=null,newIdx=-1,tutStep=0,tutThen=null;
-document.addEventListener('toggle',e=>{if(e.target.id==='opts')optsOpen=e.target.open},true);
+let coachOpen=false;
+document.addEventListener('toggle',e=>{if(e.target.id==='opts')optsOpen=e.target.open;if(e.target.id==='coach')coachOpen=e.target.open},true);
 function newRound(){stamps=0;voids=0;turns=0;lastRoute=0;routes=0;bias=null;roundWins=[];phase='q'}
 
 function show(v){
@@ -1724,7 +1736,9 @@ function rHome(){
   ${orderTabs()}
   <div class="slim">
     ${standalone()?'':`<button class="sl" data-act="a2hs"><img src="apple-touch-icon.png" alt="" width="22" height="22"><span>加到主畫面</span><i>›</i></button>`}
-    <div class="sl coach"><span class="ad">作者業配</span><span>找情感教練聊聊</span><a href="https://line.me/ti/p/~vainbook" target="_blank" rel="noopener">LINE</a><a href="https://ig.me/m/vainbook" target="_blank" rel="noopener">IG</a></div>
+    <details class="coach" id="coach" ${coachOpen?'open':''}><summary class="sl"><span class="ad">作者業配</span><span>找情感教練聊聊</span><i>＋</i></summary>
+      <div class="coach-body"><b>感情卡關？找情感教練聊聊</b><small>我是遊戲作者，也是情感教練。私訊我聊聊。</small>
+        <div class="coach-links"><a href="https://line.me/ti/p/~vainbook" target="_blank" rel="noopener">LINE 加好友</a><a href="https://ig.me/m/vainbook" target="_blank" rel="noopener">IG 私訊</a><a href="https://www.threads.com/@vainbook" target="_blank" rel="noopener">Threads</a></div></div></details>
   </div>
   <section class="recent"><div class="recent-h"><span class="lab">最近說好的</span><span class="meta">${known().length} 題玩過</span></div>
     ${W.length?W.slice(-3).reverse().map(([id])=>{const q=QI[id];return `<button class="ri t-${TYPE[q.cat.g]}" data-act="list"><i></i><span class="qt">${q.t}</span><span class="meta">${q.cat.name}</span></button>`}).join(''):'<p class="meta" style="margin:0">還沒有說好的事。剪票入場玩一局，兩人都想要的事會收在這裡。</p>'}</section>
