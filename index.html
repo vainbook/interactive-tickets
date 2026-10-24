@@ -183,12 +183,17 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .ri{display:flex;width:100%;text-align:left;align-items:center;gap:10px;padding:9px 0;border-top:1px dashed color-mix(in srgb,var(--line) 30%,transparent)}
 .ri:first-of-type{border-top:0}
 .ri i{width:.5rem;height:1.6rem;border-radius:3px;background:var(--t-bg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);flex:none}
-.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .mode{display:flex;flex-direction:column;gap:3px;padding:10px 10px 9px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);text-align:left}
 .mode b{font-family:var(--display);font-weight:400;font-size:1.15rem;line-height:1.2}
 .mode span{font-size:.72rem;color:var(--muted);line-height:1.4}
 .mode[aria-pressed="true"]{background:var(--fg);color:var(--desk)}
 .mode[aria-pressed="true"] span{color:inherit;opacity:.75}
+.mode.love[aria-pressed="true"]{background:#E04F7C;border-color:#E04F7C;color:#fff}
+.mode{padding:9px 8px 8px}
+.mode b{font-size:1.02rem}
+.mode span{font-size:.66rem}
+.t-lt{--t-bg:#FBD3DF;--t-fg:#5C1733;--s-bg:#E04F7C;--s-fg:#FFFFFF}
 .mode.spicy[aria-pressed="true"]{background:#1A1A2E;border-color:#1A1A2E;color:#F3E6C4}
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border-radius:999px;background:color-mix(in srgb,var(--fg) 10%,transparent)}
 .seg button{padding:7px 4px;border-radius:999px;font-size:.88rem;color:var(--muted)}
@@ -383,7 +388,7 @@ textarea{width:100%;box-sizing:border-box;min-height:160px;border-radius:10px;bo
 <div id="live" class="sr" aria-live="polite"></div>
 
 <script>
-const GROUPS=[{id:'eat',name:'吃喝'},{id:'date',name:'約會'},{id:'trip',name:'旅行'},{id:'life',name:'生活'},{id:'sweet',name:'甜蜜'},{id:'dare',name:'挑戰'},{id:'us',name:'未來與心聲'},{id:'hot',name:'親密'}];
+const GROUPS=[{id:'love',name:'愛之語'},{id:'eat',name:'吃喝'},{id:'date',name:'約會'},{id:'trip',name:'旅行'},{id:'life',name:'生活'},{id:'sweet',name:'甜蜜'},{id:'dare',name:'挑戰'},{id:'us',name:'未來與心聲'},{id:'hot',name:'親密'}];
 // 每行開頭數字 = 尺度（1 輕鬆、2 心跳、3 限制級）。
 // ponytail: 題目 id = 分類 + 行號，新題目請加在該分類最後，否則舊紀錄會對錯題。
 const CATS=[
@@ -1447,21 +1452,166 @@ const CATS=[
 3在租來的遊艇船艙裡
 3在山上小木屋的壁爐前
 3在對方出差回來的那一晚
-3挑戰連續七天每天一次`}
+3挑戰連續七天每天一次`},
+{id:'love_words',m:'l',g:'love',name:'肯定的言詞',qs:`
+1希望你每天跟我說一句「我愛你」
+1我願意每天跟你說一句「我愛你」
+1希望你常常說出我哪裡好
+1我願意常常說出你哪裡好
+1見面時，希望你稱讚我今天的樣子
+1見面時，我願意稱讚你今天的樣子
+1見面時，希望你跟我說「好想你」
+1見面時，我願意跟你說「好想你」
+1分開時，希望你傳訊息說你在想我
+1分開時，我願意傳訊息說我在想你
+1分開時，希望你睡前留一段語音給我
+1分開時，我願意睡前留一段語音給你
+1我難過時，希望你說「你已經很努力了」
+1你難過時，我願意說「你已經很努力了」
+1我難過時，希望你說「我站在你這邊」
+1你難過時，我願意說「我站在你這邊」
+1我很累時，希望你跟我說「辛苦了」
+1你很累時，我願意跟你說「辛苦了」
+1我忙的時候，希望你傳一句打氣的話
+1你忙的時候，我願意傳一句打氣的話
+1生日時，希望收到你親手寫的卡片
+1你生日時，我願意親手寫一張卡片給你
+1紀念日時，希望你說說這一年最喜歡我們的哪一刻
+1紀念日時，我願意說說這一年最喜歡我們的哪一刻
+1和好後，希望你說「我們沒事了，我還是很愛你」
+1和好後，我願意說「我們沒事了，我還是很愛你」
+1和好後，希望你具體說出你覺得抱歉的地方
+1和好後，我願意具體說出我覺得抱歉的地方`},
+{id:'love_time',m:'l',g:'love',name:'精心的時刻',qs:`
+1希望每週有一個晚上只屬於我們
+1我願意每週留一個晚上只給我們
+1希望一起吃飯時，我們都不看手機
+1我願意一起吃飯時不看手機
+1見面時，希望你專心看著我聊天
+1見面時，我願意專心看著你聊天
+1見面時，希望我們一起做一件沒做過的事
+1見面時，我願意陪你做一件沒做過的事
+1分開時，希望每天有一段視訊的時間
+1分開時，我願意每天留一段時間跟你視訊
+1分開時，希望我們同時看同一部電影
+1分開時，我願意跟你同時看同一部電影
+1我難過時，希望你放下手邊的事陪著我
+1你難過時，我願意放下手邊的事陪著你
+1我難過時，希望你安靜聽我說完
+1你難過時，我願意安靜聽你說完
+1我很忙時，希望你陪在旁邊做自己的事
+1你很忙時，我願意陪在旁邊做我的事
+1忙完之後，希望你空出一整天陪我
+1你忙完之後，我願意空出一整天陪你
+1生日時，希望你安排一整天的行程
+1你生日時，我願意安排一整天的行程
+1紀念日時，希望一起回到有回憶的地方
+1紀念日時，我願意帶你回到有回憶的地方
+1和好後，希望我們一起散個步聊聊
+1和好後，我願意陪你散個步聊聊
+1和好後，希望一起做一件開心的小事
+1和好後，我願意陪你做一件開心的小事`},
+{id:'love_gifts',m:'l',g:'love',name:'接受禮物',qs:`
+1希望你偶爾帶一杯我喜歡的飲料給我
+1我願意偶爾帶一杯你喜歡的飲料給你
+1希望你記得我隨口說過想要的東西
+1我願意記下你隨口說過想要的東西
+1見面時，希望你帶一個小驚喜給我
+1見面時，我願意帶一個小驚喜給你
+1見面時，希望你帶來路上看到、覺得適合我的小東西
+1見面時，我願意帶來路上看到、覺得適合你的小東西
+1分開時，希望你寄一個包裹給我
+1分開時，我願意寄一個包裹給你
+1你出遠門時，希望帶一個當地的紀念品給我
+1我出遠門時，我願意帶一個當地的紀念品給你
+1我難過時，希望你送我一樣喜歡的小東西
+1你難過時，我願意送你一樣喜歡的小東西
+1我難過時，希望你幫我叫一份愛吃的外送
+1你難過時，我願意幫你叫一份愛吃的外送
+1我加班時，希望你送點心來給我
+1你加班時，我願意送點心過去給你
+1我很累時，希望收到一份讓我放鬆的小禮物
+1你很累時，我願意送你一份讓你放鬆的小禮物
+1生日時，希望收到你用心挑的禮物
+1你生日時，我願意用心挑一份禮物給你
+1紀念日時，希望交換一件有意義的紀念品
+1紀念日時，我願意準備一件有意義的紀念品
+1和好後，希望你帶一束花或小禮物給我
+1和好後，我願意帶一束花或小禮物給你
+1和好後，希望收到一張寫著心裡話的紙條
+1和好後，我願意寫一張心裡話的紙條給你`},
+{id:'love_service',m:'l',g:'love',name:'服務的行動',qs:`
+1希望你主動幫我分擔家事
+1我願意主動幫你分擔家事
+1希望你幫我處理我常常忘記的小事
+1我願意幫你處理你常常忘記的小事
+1見面時，希望你幫我們規劃好行程
+1見面時，我願意幫我們規劃好行程
+1見面時，希望你來接我
+1見面時，我願意去接你
+1分開時，希望你幫我處理線上的瑣事，像訂票、訂位
+1分開時，我願意幫你處理線上的瑣事，像訂票、訂位
+1分開後，希望你確認我平安到家
+1分開後，我願意確認你平安到家
+1我難過時，希望你幫我處理一件麻煩事
+1你難過時，我願意幫你處理一件麻煩事
+1我難過時，希望你煮一頓飯給我
+1你難過時，我願意煮一頓飯給你
+1我很忙時，希望你幫我準備好三餐
+1你很忙時，我願意幫你準備好三餐
+1我很累時，希望你幫我把家裡整理好
+1你很累時，我願意幫你把家裡整理好
+1生日時，希望你包辦當天所有的事
+1你生日時，我願意包辦當天所有的事
+1紀念日時，希望你親手做一頓晚餐給我
+1紀念日時，我願意親手做一頓晚餐給你
+1和好後，希望你用行動補償，而不只是用說的
+1和好後，我願意用行動補償，而不只是用說的
+1和好後，希望你幫我做一件我最近很煩的事
+1和好後，我願意幫你做一件你最近很煩的事`},
+{id:'love_touch',m:'l',g:'love',name:'身體的接觸',qs:`
+1希望出門時你主動牽我的手
+1我願意出門時主動牽你的手
+1希望每天有一個長長的擁抱
+1我願意每天給你一個長長的擁抱
+1見面時，希望一見面就先抱一下
+1見面時，我願意一見面就先抱你一下
+1見面時，希望你坐在我身邊讓我靠著
+1見面時，我願意坐在你身邊讓你靠著
+1分開前，希望好好抱一下再走
+1分開前，我願意好好抱你一下再走
+1久別重逢時，希望第一件事就是緊緊擁抱
+1久別重逢時，我願意第一件事就是緊緊抱住你
+1我難過時，希望你什麼都不說，先抱抱我
+1你難過時，我願意什麼都不說，先抱抱你
+1我難過時，希望你握著我的手
+1你難過時，我願意握著你的手
+1我很累時，希望你幫我按摩肩膀
+1你很累時，我願意幫你按摩肩膀
+1我很累時，希望你摸摸我的頭
+1你很累時，我願意摸摸你的頭
+1紀念日時，希望一起跳一支慢舞
+1紀念日時，我願意陪你跳一支慢舞
+1生日時，希望你給我一個生日吻
+1你生日時，我願意給你一個生日吻
+1和好後，希望你先主動抱我
+1和好後，我願意先主動抱你
+1和好後，希望我們靠著彼此安靜待一會
+1和好後，我願意靠著你安靜待一會`}
 ];
 const SPEEDS=[['fast','快',1000],['mid','標準',3000],['slow','慢',5000]];
 const autoMs=()=>(SPEEDS.find(x=>x[0]===S.speed)||SPEEDS[1])[2];
 const LVN={1:'輕鬆',2:'心跳',3:'限制級'};
-const MODES=[{id:'know',name:'認識',d:'從喜好開始，多認識彼此'},{id:'date',name:'約會',d:'想一起做的事，讓關係升溫'},{id:'spicy',name:'限制級',d:'只聊色色的話題，18+'}];
+const MODES=[{id:'know',name:'認識',d:'從喜好開始，多認識彼此'},{id:'date',name:'約會',d:'想一起做的事，讓關係升溫'},{id:'spicy',name:'限制級',d:'只聊色色的話題，18+'},{id:'love',name:'愛之語',d:'說出想要的，和願意給的'}];
 // 認識：標 k 的類別、只有輕鬆題；約會：標 d 的類別、輕鬆和心跳；限制級：親密類加上其他類別的限制級題
-const inMode=(q,m)=>m==='spicy'?(q.cat.g==='hot'||q.lv===3):q.cat.g!=='hot'&&q.lv<3&&q.cat.m.includes(m==='know'?'k':'d')&&(m!=='know'||q.lv===1);
+const inMode=(q,m)=>m==='love'?q.cat.m==='l':m==='spicy'?(q.cat.g==='hot'||q.lv===3):q.cat.g!=='hot'&&q.lv<3&&q.cat.m.includes(m==='know'?'k':'d')&&(m!=='know'||q.lv===1);
 const PICK=['不要','不確定','想！'];
 const DEF=['甲方','乙方'];
 const GOAL=8,MAXV=3,ROUTE_EVERY=5,MIX_N=12;
 let advT=null;
 // 每個情境對應一種票
-const TYPE={eat:'rc',date:'mv',trip:'bp',life:'tr',sweet:'am',dare:'cc',us:'pc',hot:'hk'};
-const KIND={rc:'發票',mv:'電影票',bp:'登機證',tr:'車票',am:'樂園票',cc:'演唱會票',pc:'明信片',hk:'房卡'};
+const TYPE={love:'lt',eat:'rc',date:'mv',trip:'bp',life:'tr',sweet:'am',dare:'cc',us:'pc',hot:'hk'};
+const KIND={lt:'情書',rc:'發票',mv:'電影票',bp:'登機證',tr:'車票',am:'樂園票',cc:'演唱會票',pc:'明信片',hk:'房卡'};
 const CODES=['LUV','YES','HUG','FUN','JOY','SKY','SUN','KIS'],ROOMS=['520','1314','0214','1102','0707','1225'];
 const Q=[],QI={};
 CATS.forEach(c=>c.qs.trim().split('\n').forEach((l,i)=>{const q={id:c.id+'-'+i,cat:c,lv:+l[0],t:l.slice(1).trim()};Q.push(q);QI[q.id]=q}));
@@ -1546,6 +1696,7 @@ function ticket(q){
     am:['雙人樂園・'+c,`<span class="big">♡</span><small>1 RIDE</small>`],
     cc:['LIVE TOUR・'+c,`<small>區</small><span class="big">${'ABC'[h%3]}${h%4+1}</span><b>${h%30+1}-${h%40+1}</b>`],
     pc:['寄給未來的我們・'+c,`<span class="pcs">♥</span><small>${DATE.slice(5)}</small>`],
+    lt:['愛之語・'+c,`<span class="big">♥</span><small>LOVE</small>`],
     hk:['HOTEL TWO・'+c,`<small>ROOM</small><span class="big">${ROOMS[h%ROOMS.length]}</span>`]
   }[ty];
   return `<div class="tk notch t-${ty}"><div class="main"><div class="tk-k">${k}</div><p class="q">${qIn(q,L)}</p>${S.lang2&&S.l2mode==='sub'&&S.lang2!==L?`<p class="q2" data-lang="${S.lang2}">${qIn(q,S.lang2)}</p>`:''}</div><div class="stub">${stub}${lv}</div></div>`;
@@ -1890,6 +2041,7 @@ const RTX={zh:{next:'下一站：',soft:'輕鬆一點',softd:'回到輕鬆的題
   ko:{next:'다음 행선지: ',soft:'가볍게',softd:'가벼운 카드로 돌아가기',fate:'운에 맡기기',fated:'방향 없이 랜덤으로',bold:'좀 더 과감하게',boldd:'다음은 「{x}」 카드',talk:'{x} 이야기',talkd:'다음은 전부 「{x}」'}};
 const RT=(k,x='')=>(RTX[S.lang]||RTX.zh)[k].replace('{x}',x);
 function routeOpts(){
+  if(S.mode==='love')return [];  // 愛之語只有一種情境，不用選方向
   const ls=[...new Set(pool().map(q=>q.lv))].sort(),o=[];
   if(ls.length>1){
     const top=ls.at(-1);
