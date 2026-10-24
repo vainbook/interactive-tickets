@@ -232,6 +232,9 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .slim{display:flex;flex-wrap:wrap;gap:8px}
 .sl{flex:1 1 auto;display:flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px;border-radius:999px;background:var(--card);border:1px solid color-mix(in srgb,var(--line) 20%,transparent);font-size:.8rem;color:var(--muted);text-align:left}
 .sl img{border-radius:6px;flex:none}
+.sl.a2{flex-basis:100%;padding:8px 14px;border-radius:14px;background:#FFF1D2;border:1.5px solid #E2A93B;color:#6B4708}
+.sl.a2 b{display:block;font-weight:700;font-size:.92rem;color:#4A3104}
+.sl.a2 small{display:block;font-size:.76rem;line-height:1.4}
 .sl i{font-style:normal;margin-left:auto}
 .coach .ad{font-size:.62rem;padding:0 5px;border-radius:4px;border:1px solid color-mix(in srgb,var(--line) 25%,transparent)}
 .coach{flex:1 1 100%}
@@ -1735,8 +1738,8 @@ function rHome(){
   <div><span class="lab">這局玩什麼</span>${modeTabs()}</div>
   ${orderTabs()}
   <div class="slim">
-    ${standalone()?'':`<button class="sl" data-act="a2hs"><img src="apple-touch-icon.png" alt="" width="22" height="22"><span>加到主畫面</span><i>›</i></button>`}
-    <details class="coach" id="coach" ${coachOpen?'open':''}><summary class="sl"><span class="ad">作者業配</span><span>找情感教練聊聊</span><i>＋</i></summary>
+    ${standalone()?'':`<button class="sl a2" data-act="a2hs"><img src="apple-touch-icon.png" alt="" width="30" height="30"><span><b>加到主畫面</b><small><span aria-hidden="true">⚠ </span>不加的話，下次可能就找不到這個遊戲了</small></span><i>›</i></button>`}
+    <details class="coach" id="coach" ${coachOpen?'open':''}><summary class="sl"><span class="ad"><span>作者業配</span> <span aria-hidden="true">😆</span></span><span>找情感教練聊聊</span><i>＋</i></summary>
       <div class="coach-body"><b>感情卡關？找情感教練聊聊</b><small>我是遊戲作者，也是情感教練。私訊我聊聊。</small>
         <div class="coach-links"><a href="https://line.me/ti/p/~vainbook" target="_blank" rel="noopener">LINE 加好友</a><a href="https://ig.me/m/vainbook" target="_blank" rel="noopener">IG 私訊</a><a href="https://www.threads.com/@vainbook" target="_blank" rel="noopener">Threads</a></div></div></details>
   </div>
