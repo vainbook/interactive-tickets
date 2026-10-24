@@ -248,7 +248,10 @@ details.coach summary::after,details.coach[open] summary::after{content:none}
 .coach-body small{font-size:.78rem;color:var(--muted);line-height:1.5}
 .coach-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .coach-links a{font-size:.78rem;padding:5px 11px;border-radius:999px;text-decoration:none;color:var(--fg);border:1px solid color-mix(in srgb,var(--line) 40%,transparent)}
-.coach-links a:first-child{background:#06C755;border-color:#06C755;color:#fff}
+.coach-links a{border:0;color:#fff;font-weight:500}
+.coach-links a:first-child{background:#06C755}
+.coach-links a.ig{background:linear-gradient(45deg,#F58529,#DD2A7B 50%,#8134AF)}
+.coach-links a.th{background:#101010}
 @keyframes coachIn{from{opacity:0;transform:translateY(-4px)}}
 html:not([lang^=zh]) .mode b{font-size:.86rem;overflow-wrap:anywhere;hyphens:auto}
 .tk .q2{margin:.15em 0 0;font-size:.8em;line-height:1.35;opacity:.75}
@@ -1741,7 +1744,7 @@ function rHome(){
     ${standalone()?'':`<button class="sl a2" data-act="a2hs"><img src="apple-touch-icon.png" alt="" width="30" height="30"><span><b>加到主畫面</b><small><span aria-hidden="true">⚠ </span>不加的話，下次可能就找不到這個遊戲了</small></span><i>›</i></button>`}
     <details class="coach" id="coach" ${coachOpen?'open':''}><summary class="sl"><span class="ad"><span>作者業配</span> <span aria-hidden="true">😆</span></span><span>找情感教練聊聊</span><i>＋</i></summary>
       <div class="coach-body"><b>感情卡關？找情感教練聊聊</b><small>我是遊戲作者，也是情感教練。私訊我聊聊。</small>
-        <div class="coach-links"><a href="https://line.me/ti/p/~vainbook" target="_blank" rel="noopener">LINE 加好友</a><a href="https://ig.me/m/vainbook" target="_blank" rel="noopener">IG 私訊</a><a href="https://www.threads.com/@vainbook" target="_blank" rel="noopener">Threads</a></div></div></details>
+        <div class="coach-links"><a href="https://line.me/ti/p/~vainbook" target="_blank" rel="noopener">LINE 加好友</a><a class="ig" href="https://www.instagram.com/vainbook/" target="_blank" rel="noopener">IG 追蹤</a><a class="th" href="https://www.threads.com/@vainbook" target="_blank" rel="noopener">Threads 追蹤</a></div></div></details>
   </div>
   <section class="recent"><div class="recent-h"><span class="lab">最近說好的</span><span class="meta">${known().length} 題玩過</span></div>
     ${W.length?W.slice(-3).reverse().map(([id])=>{const q=QI[id];return `<button class="ri t-${TYPE[q.cat.g]}" data-act="list"><i></i><span class="qt">${q.t}</span><span class="meta">${q.cat.name}</span></button>`}).join(''):'<p class="meta" style="margin:0">還沒有說好的事。剪票入場玩一局，兩人都想要的事會收在這裡。</p>'}</section>
