@@ -221,7 +221,15 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .sum .mini{justify-content:center}
 .play.solo{grid-template-rows:auto 1fr}
 .play.solo #hB{display:none}
-.top-r{display:flex;justify-content:flex-end;margin-bottom:-14px}
+.top-r{display:flex;justify-content:flex-end;gap:14px;margin-bottom:-14px}
+.a2-head{display:flex;gap:14px;align-items:center}
+.a2-head img{border-radius:13px;flex:none}
+.a2-head h2{font-size:1.25rem}
+.a2-head p{margin:2px 0 0}
+.a2 ol{margin:4px 0 0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px;font-size:.92rem;line-height:1.6}
+.a2 > p{margin:0;font-size:.92rem}
+.a2-go{align-self:flex-start}
+.ic-share{width:1.15em;height:1.15em;vertical-align:-.2em;color:#2F6FDE}
 .resume{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-radius:12px;background:var(--fg);color:var(--desk);text-align:left}
 .resume b{display:block;font-family:var(--display);font-weight:400;font-size:1.1rem}
 .resume small{font-size:.78rem;opacity:.8}
@@ -1519,7 +1527,7 @@ function rHome(){
   const p=pool(),left=p.filter(q=>!S.answers[q.id]).length,W=wishes();
   const R=S.round,ON=o=>({sync:'同時翻牌',mix:'各滑各的',pass:'輪流滑'})[o];
   $('#home').innerHTML=`<div class="wrap home">
-  <div class="top-r"><button class="link" data-act="tut">怎麼玩？</button></div>
+  <div class="top-r">${standalone()?'':'<button class="link" data-act="a2hs">加到主畫面</button>'}<button class="link" data-act="tut">怎麼玩？</button></div>
   <div class="hero${left?' go':''}" ${left?'role="button" tabindex="0" data-act="start" aria-label="剪票入場，開始一局"':''}><div class="tk notch"><div class="main"><div class="hero-k">ADMIT TWO・雙人入場券</div><h1>互動門票</h1><p>一起滑一滑，找出你們的共識。</p><small class="hero-fine">本票限兩人同行，期限內兌換。</small></div></div>
     <span class="stub">${left?`<b>剪票<br>入場</b><small>還有 ${left} 題</small>`:`<small>${p.length?'這個情境<br>都玩過了':'先到設定<br>選情境'}</small>`}</span></div>
   ${notice?`<p class="notice">${notice}</p>`:''}
@@ -1626,6 +1634,23 @@ function rTut(){
     <div class="tut-act"><button class="link" data-act="tutdone">略過</button><button class="next" data-act="${last?'tutdone':'tutnext'}">${last?'開始玩':'下一步'}</button></div></div>`;
 }
 function openTut(then){tutStep=0;tutThen=then;$('#tut').hidden=false;rTut();$('#tut .next').focus()}
+// 加到主畫面：Android Chrome 可以直接叫出安裝視窗；iPhone 只能教步驟；App 內建瀏覽器要先換成 Safari／Chrome
+let installEvt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e});
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const SHARE_ICON='<svg class="ic-share" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function openA2hs(){
+  const ua=navigator.userAgent,android=/Android/.test(ua),ios=!android&&(/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)),
+    inApp=/Instagram|FBAN|FBAV|Line\/|Barcelona|Threads/i.test(ua);
+  let steps;
+  if(installEvt)steps='<p>按下面的按鈕，就能把互動門票放到主畫面。</p><button class="next a2-go" data-act="a2go">加到主畫面</button>';
+  else if(inApp)steps=`<p>你現在是在 App 裡開的網頁，這裡不能加到主畫面。</p><ol><li>點右上角的「⋯」或分享按鈕</li><li>選「用 ${ios?'Safari':'Chrome'} 開啟」</li><li>再點一次首頁的「加到主畫面」</li></ol>`;
+  else if(ios)steps=`<ol><li>點 Safari 下方的分享按鈕 ${SHARE_ICON}</li><li>往下滑，選「加入主畫面」</li><li>按右上角的「加入」</li></ol>`;
+  else if(android)steps='<ol><li>點 Chrome 右上角的「⋮」選單</li><li>選「加到主畫面」或「安裝應用程式」</li></ol>';
+  else steps='<p>用手機打開這個網址，就能把互動門票加到主畫面。</p>';
+  $('#tut').innerHTML=`<div class="tut-card a2"><div class="a2-head"><img src="apple-touch-icon.png" alt="" width="56" height="56"><div><h2>加到主畫面</h2><p>像 App 一樣，一點就開，沒有網址列。</p></div></div>${steps}<div class="tut-act"><span></span><button class="link" data-act="tutdone">知道了</button></div></div>`;
+  $('#tut').hidden=false;tutThen=null;
+}
 function startRound(){newRound();S.order==='mix'?startMix():draw()}
 function rPlay(){
   $('#play').classList.toggle('solo',solo());
@@ -1839,6 +1864,8 @@ document.addEventListener('click',e=>{
   else if(act==='restart')startRound();
   else if(act==='resume')resume();
   else if(act==='tut')openTut(null);
+  else if(act==='a2hs')openA2hs();
+  else if(act==='a2go'){installEvt?.prompt();installEvt?.userChoice.finally(()=>{installEvt=null;$('#tut').hidden=true;render()})}
   else if(act==='tutnext'){tutStep++;rTut()}
   else if(act==='tutdone'){$('#tut').hidden=true;S.tut=1;save();const f=tutThen;tutThen=null;f?.()}
   else if(act==='handoff'){cur.handed=true;paintHalf(0)}
