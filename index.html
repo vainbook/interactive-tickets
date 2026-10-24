@@ -224,6 +224,20 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .top-r{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin-bottom:-14px}
 #lang{margin-right:auto;font:inherit;font-size:.8rem;color:var(--muted);background:transparent;border:1px solid color-mix(in srgb,var(--line) 30%,transparent);border-radius:999px;padding:2px 6px}
 .i18n-wait body{visibility:hidden}
+.duo{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
+.duo.one{grid-template-columns:1fr}
+.promo{position:relative;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:12px;text-align:left;min-width:0}
+.promo b{font-family:var(--display);font-weight:400;font-size:1.02rem;line-height:1.3}
+.promo small{font-size:.75rem;line-height:1.45;opacity:.85}
+.a2p{background:#C8352B;color:#FFF4E4;align-items:flex-start}
+.a2p img{border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.25);margin-bottom:4px}
+.coach{background:var(--card);border:1.5px solid var(--line)}
+.coach .ad{align-self:flex-start;font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid color-mix(in srgb,var(--line) 35%,transparent);border-radius:4px;padding:0 5px}
+.coach-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.coach-links a{font-size:.75rem;padding:4px 9px;border-radius:999px;text-decoration:none;color:var(--fg);border:1px solid color-mix(in srgb,var(--line) 40%,transparent)}
+.coach-links a:first-child{background:#06C755;border-color:#06C755;color:#fff}
+.tk .q2{margin:.15em 0 0;font-size:.8em;line-height:1.35;opacity:.75}
+.l2m{margin-top:8px}
 html:not([lang^=zh]) .hero h1{white-space:normal;font-size:2.1em;line-height:1.1}
 html:not([lang^=zh]) .hero .stub b{font-size:1.05em}
 html[lang=ja] .hero h1{font-size:1.7em;white-space:nowrap}
@@ -1441,7 +1455,7 @@ const Q=[],QI={};
 CATS.forEach(c=>c.qs.trim().split('\n').forEach((l,i)=>{const q={id:c.id+'-'+i,cat:c,lv:+l[0],t:l.slice(1).trim()};Q.push(q);QI[q.id]=q}));
 
 const KEY='shuohao-v1';
-let S={answers:{},done:{},names:['',''],mode:'date',off:[],order:'sync',face:true,gentle:true,sound:true,speed:'mid',lang:null,tut:0,plan:{},memo:{},round:null};
+let S={answers:{},done:{},names:['',''],mode:'date',off:[],order:'sync',face:true,gentle:true,sound:true,speed:'mid',lang:null,lang2:null,l2mode:'split',tut:0,plan:{},memo:{},round:null};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{}
 // 舊版用 groups 記開啟的大類，換算成關掉的細項
 if(S.groups){S.off=CATS.filter(c=>!S.groups.includes(c.g)).map(c=>c.id);delete S.groups}
@@ -1510,7 +1524,7 @@ function show(v){
 function render(){({home:rHome,play:rPlay,bank:rBank,list:rList})[view]()}
 
 function ticket(q){
-  const h=hh(q.id),c=q.cat.name,no=String(h%100000).padStart(5,'0'),lv=`<span class="lvl">${'♥'.repeat(q.lv)}</span>`;
+  const h=hh(q.id),L=PL||S.lang,c=catIn(q.cat,L),no=String(h%100000).padStart(5,'0'),lv=`<span class="lvl">${'♥'.repeat(q.lv)}</span>`;
   const seat=`${h%30+1}${'ACDFHK'[h%6]}`,ty=TYPE[q.cat.g];
   const [k,stub]={
     rc:['雙人食堂・'+c,`<small>NO.</small><b>${no}</b>`],
@@ -1522,7 +1536,7 @@ function ticket(q){
     pc:['寄給未來的我們・'+c,`<span class="pcs">♥</span><small>${DATE.slice(5)}</small>`],
     hk:['HOTEL TWO・'+c,`<small>ROOM</small><span class="big">${ROOMS[h%ROOMS.length]}</span>`]
   }[ty];
-  return `<div class="tk notch t-${ty}"><div class="main"><div class="tk-k">${k}</div><p class="q">${q.t}</p></div><div class="stub">${stub}${lv}</div></div>`;
+  return `<div class="tk notch t-${ty}"><div class="main"><div class="tk-k">${k}</div><p class="q">${qIn(q,L)}</p>${S.lang2&&S.l2mode==='sub'&&S.lang2!==L?`<p class="q2" data-lang="${S.lang2}">${qIn(q,S.lang2)}</p>`:''}</div><div class="stub">${stub}${lv}</div></div>`;
 }
 
 const modeGroups=()=>GROUPS.filter(g=>Q.some(q=>q.cat.g===g.id&&inMode(q,S.mode)));
@@ -1549,6 +1563,11 @@ function rHome(){
   ${R?`<button class="resume" data-act="resume"><span><b>繼續上一局</b><small>${MODES.find(m=>m.id===R.mode).name}・${ON(R.order)}・共識 ${R.stamps}${R.order==='mix'?'':' / '+GOAL}</small></span><i>›</i></button>`:''}
   <div><span class="lab">這局玩什麼</span>${modeTabs()}</div>
   ${orderTabs()}
+  <div class="duo${standalone()?' one':''}">
+    ${standalone()?'':`<button class="promo a2p" data-act="a2hs"><img src="apple-touch-icon.png" alt="" width="44" height="44"><b>加到主畫面</b><small>存成 App，下次不用再找網址</small></button>`}
+    <div class="promo coach"><span class="ad">作者業配</span><b>感情卡關？找情感教練聊聊</b><small>我是遊戲作者，也是情感教練。私訊我聊聊。</small>
+      <div class="coach-links"><a href="https://line.me/ti/p/~vainbook" target="_blank" rel="noopener">LINE 加好友</a><a href="https://ig.me/m/vainbook" target="_blank" rel="noopener">IG 私訊</a><a href="https://www.threads.com/@vainbook" target="_blank" rel="noopener">Threads</a></div></div>
+  </div>
   <section class="recent"><div class="recent-h"><span class="lab">最近說好的</span><span class="meta">${known().length} 題玩過</span></div>
     ${W.length?W.slice(-3).reverse().map(([id])=>{const q=QI[id];return `<button class="ri t-${TYPE[q.cat.g]}" data-act="list"><i></i><span class="qt">${q.t}</span><span class="meta">${q.cat.name}</span></button>`}).join(''):'<p class="meta" style="margin:0">還沒有說好的事。剪票入場玩一局，兩人都想要的事會收在這裡。</p>'}</section>
   <div class="row2"><button class="ghost" data-act="bank">瀏覽題庫</button><button class="ghost" data-act="list">我們的票夾<b>${W.length}</b></button></div>
@@ -1558,6 +1577,8 @@ function rHome(){
       <label><input id="nA" maxlength="8" value="${nm(0)}" placeholder="下方玩家" aria-label="下方玩家的名字"><small>拿手機的人（下方）</small></label>
       <label><input id="nB" maxlength="8" value="${nm(1)}" placeholder="上方玩家" aria-label="上方玩家的名字"><small>坐對面的人（上方）</small></label></div></div>
     ${catChips()}
+    <div><span class="lab">第二語言</span><div class="chips nolang">${[['','—'],...LANGS].filter(([k])=>k!==S.lang).map(([k,n])=>`<button class="chip" data-act="lang2" data-v="${k}" aria-pressed="${(S.lang2||'')===k}">${n}</button>`).join('')}</div>
+      ${S.lang2?`<div class="chips l2m">${[['split','對面玩家用第二語言'],['sub','題目加註第二語言']].map(([k,n])=>`<button class="chip" data-act="l2mode" data-v="${k}" aria-pressed="${S.l2mode===k}">${n}</button>`).join('')}</div>`:''}</div>
     <label class="opt"><input type="checkbox" id="optFace" data-opt="face" ${S.face?'checked':''}><span><b>對坐模式</b><span>上半畫面倒過來，給坐對面的人看。並肩坐就關掉。</span></span></label>
     <label class="opt"><input type="checkbox" id="optGentle" data-opt="gentle" ${S.gentle?'checked':''}><span><b>溫柔揭曉</b><span>只有一個人滑「不要」時，不顯示是誰。</span></span></label>
     <label class="opt"><input type="checkbox" id="optSound" data-opt="sound" ${S.sound?'checked':''}><span><b>音效與震動</b><span>剪票、蓋章時的聲音；支援的手機會一起震動。</span></span></label>
@@ -1693,6 +1714,7 @@ const INKS='<span class="ink round c-red">想！</span><span class="ink c-gray">
 function paintHalf(p){
   if(p&&solo())return;
   const el=$(p?'#hB':'#hA');
+  PL=langOf(solo()&&cur&&phase==='q'?(cur.picks[cur.first]==null?cur.first:1-cur.first):p);el.dataset.lang=PL;
   let html;
   if(phase==='win')html=`<div class="tkw"><div class="tk t-cert"><div class="cert-k">CERTIFICATE・共識達成證明</div><p class="q">集滿 ${GOAL} 個共識！</p><ul class="cert-list">${roundWins.slice(-3).map(id=>`<li>${QI[id].t}</li>`).join('')}</ul></div><span class="ink round corner c-red on">達成</span></div>
     <div class="mini"><button class="mb" data-act="list">看票夾</button><button class="mb mb2" data-act="restart">再來一局</button></div>`;
@@ -1724,7 +1746,7 @@ function paintHalf(p){
     else body=swipeCard(p,q);
     html=`<div class="who"><b>${nm(p)}</b><span>${LVN[q.lv]}${bias?'・'+RT('next')+bias.t:''}</span></div>${body}`;
   }
-  el.innerHTML=html;
+  el.innerHTML=html;PL=S.lang;
   el.querySelectorAll('[data-card]').forEach(c=>bindCard(+c.dataset.card));
   if(view==='play')keepRound();
 }
@@ -1887,6 +1909,8 @@ document.addEventListener('click',e=>{
   else if(act==='resume')resume();
   else if(act==='tut')openTut(null);
   else if(act==='a2hs')openA2hs();
+  else if(act==='lang2'){S.lang2=v||null;save();loadLang(()=>{render();trNode(document.body)})}
+  else if(act==='l2mode'){S.l2mode=v;save();render()}
   else if(act==='a2go'){installEvt?.prompt();installEvt?.userChoice.finally(()=>{installEvt=null;$('#tut').hidden=true;render()})}
   else if(act==='tutnext'){tutStep++;rTut()}
   else if(act==='tutdone'){$('#tut').hidden=true;S.tut=1;save();const f=tutThen;tutThen=null;f?.()}
@@ -1937,15 +1961,20 @@ document.addEventListener('change',e=>{
 // ---------- 多語言：題目與分類在載入時替換；介面文字在畫到畫面上時查表替換（數字用 {n} 佔位） ----------
 const LANGS=[['zh','中文'],['en','EN'],['ja','日本語'],['ko','한국어']];
 if(!S.lang){const n=(navigator.language||'').toLowerCase();S.lang=n.startsWith('zh')?'zh':n.startsWith('ja')?'ja':n.startsWith('ko')?'ko':'en'}
-const DICT=()=>S.lang==='zh'?null:window.I18N?.[S.lang];
+const DICT=(l=S.lang)=>l==='zh'?null:window.I18N?.[l];
+// 第二語言：「對面玩家用」時上半畫面（玩家二）換語言；PL 是正在畫的那一半用的語言
+let PL=null;
+const langOf=p=>S.lang2&&S.l2mode==='split'&&p===1?S.lang2:S.lang;
+const qIn=(q,l)=>l===S.lang?q.t:l==='zh'?(q.zh??q.t):(window.I18N?.[l]?.q[q.id]||q.zh||q.t);
+const catIn=(c,l)=>l===S.lang?c.name:l==='zh'?(c.zh??c.name):(window.I18N?.[l]?.c[c.id]||c.zh||c.name);
 const CJK=/[\u3400-\u9fff]/;
 function trOne(t,D){
   const nums=t.match(/\d+/g)||[],k=t.replace(/\d+/g,'{n}'),hit=D.ui[k];
   if(hit!=null){let i=0;return hit.replace(/\{n\}/g,()=>nums[i++]??'')}
   return null;
 }
-function tr(t){
-  const D=DICT();
+function tr(t,l=S.lang){
+  const D=DICT(l);
   if(!D||!CJK.test(t))return t;
   const full=trOne(t,D);
   if(full!=null)return full;
@@ -1956,19 +1985,20 @@ function tr(t){
     if(h!=null)return h.split(D.ui[sub]||sub).join(n);
   }
   // 「A・B・C」這類組合字，逐段翻
-  if(/[・｜]/.test(t))return t.split(/([・｜])/).map(x=>/[・｜]/.test(x)?(S.lang==='ja'?'・':' · '):CJK.test(x)?(trOne(x.trim(),D)??x):x).join('');
+  if(/[・｜]/.test(t))return t.split(/([・｜])/).map(x=>/[・｜]/.test(x)?(l==='ja'?'・':' · '):CJK.test(x)?(trOne(x.trim(),D)??x):x).join('');
   return t;
 }
 function trNode(root){
-  if(!DICT())return;
+  if(S.lang==='zh'&&(!S.lang2||S.lang2==='zh'))return;
+  const at=n=>n.closest?.('[data-lang]')?.dataset.lang||S.lang;
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
   for(let n=root;n;n=w.nextNode()){
     if(n.nodeType===3){
       const pn=n.parentNode;
-      if(!pn||/SCRIPT|STYLE/.test(pn.nodeName)||pn.closest?.('#lang'))continue;
+      if(!pn||/SCRIPT|STYLE/.test(pn.nodeName)||pn.closest?.('#lang,.nolang'))continue;
       const v=n.nodeValue,t=v.trim();
-      if(t&&CJK.test(t)){const r=tr(t);if(r!==t)n.nodeValue=v.replace(t,r)}
-    }else if(n.nodeType===1&&!n.closest('#lang'))for(const a of ['aria-label','placeholder','title']){const v=n.getAttribute(a);if(v&&CJK.test(v))n.setAttribute(a,tr(v))}
+      if(t&&CJK.test(t)){const r=tr(t,at(pn));if(r!==t)n.nodeValue=v.replace(t,r)}
+    }else if(n.nodeType===1&&!n.closest('#lang,.nolang'))for(const a of ['aria-label','placeholder','title']){const v=n.getAttribute(a);if(v&&CJK.test(v))n.setAttribute(a,tr(v,at(n)))}
   }
 }
 new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')trNode(m.target);else m.addedNodes.forEach(trNode)}}).observe(document.body,{childList:true,subtree:true,characterData:true});
@@ -1981,9 +2011,11 @@ function applyLang(){
   document.title=D?.ui['互動門票']||'互動門票';
 }
 function loadLang(done){
-  if(S.lang==='zh'||window.I18N?.[S.lang])return done();
+  if(S.lang2===S.lang)S.lang2=null;
+  const need=[S.lang,S.lang2].find(l=>l&&l!=='zh'&&!window.I18N?.[l]);
+  if(!need)return done();
   const sc=document.createElement('script');
-  sc.src=`i18n/${S.lang}.js`;sc.onload=done;sc.onerror=()=>{S.lang='zh';done()};
+  sc.src=`i18n/${need}.js`;sc.onload=()=>loadLang(done);sc.onerror=()=>{if(need===S.lang)S.lang='zh';else S.lang2=null;loadLang(done)};
   document.head.appendChild(sc);
 }
 document.addEventListener('change',e=>{if(e.target.id==='lang'){S.lang=e.target.value;save();loadLang(()=>{applyLang();render();trNode(document.body)})}});
