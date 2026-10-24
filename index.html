@@ -240,6 +240,7 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .l2m{margin-top:8px}
 .seg{grid-template-columns:repeat(4,minmax(0,1fr))}
 .seg button{font-size:.8rem}
+.seg .pl{margin-right:3px;font-size:.9em}
 .net-box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;text-align:center}
 .net-code{margin:2px 0 4px;font-family:var(--mono);font-size:2.8rem;letter-spacing:.2em;font-weight:500}
 .net-link{margin:0;font-family:var(--mono);font-size:.72rem;color:var(--muted);word-break:break-all;text-align:center}
@@ -1559,9 +1560,9 @@ function catChips(){
   return `<div><span class="lab">情境與分類</span><div class="cgs">${modeGroups().map(g=>{const cs=modeCats(g),on=cs.filter(c=>!S.off.includes(c.id)).length;
     return `<div class="cg"><button class="chip g" data-act="grp" data-v="${g.id}" aria-pressed="${on===cs.length}">${g.name}<small>${on}/${cs.length}</small></button><div class="chips">${cs.map(c=>`<button class="chip s" data-act="cat" data-v="${c.id}" aria-pressed="${!S.off.includes(c.id)}">${c.name}</button>`).join('')}</div></div>`}).join('')}</div></div>`;
 }
-const ORDERS=[['sync','同時翻牌','同一題兩人一起滑，馬上揭曉'],['net','遠距連線','兩支手機各自打開，用房號連線一起玩'],['mix','各滑各的','同一組 12 題，順序各不相同，滑完再對答案'],['pass','輪流滑','一人滑完把手機交給對方，完全看不到彼此的選擇']];
+const ORDERS=[['sync','同時翻牌','同一題兩人一起滑，馬上揭曉'],['mix','各滑各的','同一組 12 題，順序各不相同，滑完再對答案'],['pass','輪流滑','一人滑完把手機交給對方，完全看不到彼此的選擇'],['net','遠距連線','兩支手機各自打開，用房號連線一起玩']];
 function orderTabs(){
-  return `<div><span class="lab">怎麼玩</span><div class="seg" role="group" aria-label="怎麼玩">${ORDERS.map(([k,n])=>`<button data-act="order" data-v="${k}" aria-pressed="${S.order===k}">${n}</button>`).join('')}</div><p class="seg-d">${ORDERS.find(o=>o[0]===S.order)[2]}</p></div>`;
+  return `<div><span class="lab">怎麼玩</span><div class="seg" role="group" aria-label="怎麼玩">${ORDERS.map(([k,n])=>`<button data-act="order" data-v="${k}" aria-pressed="${S.order===k}">${k==='net'?'<span class="pl" aria-hidden="true">✈</span>':''}${n}</button>`).join('')}</div><p class="seg-d">${ORDERS.find(o=>o[0]===S.order)[2]}</p></div>`;
 }
 function rHome(){
   const p=pool(),left=p.filter(q=>!S.answers[q.id]).length,W=wishes();
