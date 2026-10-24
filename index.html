@@ -221,7 +221,12 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .sum .mini{justify-content:center}
 .play.solo{grid-template-rows:auto 1fr}
 .play.solo #hB{display:none}
-.top-r{display:flex;justify-content:flex-end;gap:14px;margin-bottom:-14px}
+.top-r{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin-bottom:-14px}
+#lang{margin-right:auto;font:inherit;font-size:.8rem;color:var(--muted);background:transparent;border:1px solid color-mix(in srgb,var(--line) 30%,transparent);border-radius:999px;padding:2px 6px}
+.i18n-wait body{visibility:hidden}
+html:not([lang^=zh]) .hero h1{white-space:normal;font-size:2.1em;line-height:1.1}
+html:not([lang^=zh]) .hero .stub b{font-size:1.05em}
+html[lang=ja] .hero h1{font-size:1.7em;white-space:nowrap}
 .a2-sub{margin:0;font-size:.88rem;color:var(--muted);line-height:1.6}
 .a2-home{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 14px 12px;border-radius:16px;background:linear-gradient(160deg,#6E7FA3,#34405E)}
 .a2-home span{display:flex;flex-direction:column;align-items:center;gap:5px}
@@ -1436,7 +1441,7 @@ const Q=[],QI={};
 CATS.forEach(c=>c.qs.trim().split('\n').forEach((l,i)=>{const q={id:c.id+'-'+i,cat:c,lv:+l[0],t:l.slice(1).trim()};Q.push(q);QI[q.id]=q}));
 
 const KEY='shuohao-v1';
-let S={answers:{},done:{},names:['',''],mode:'date',off:[],order:'sync',face:true,gentle:true,sound:true,speed:'mid',tut:0,plan:{},memo:{},round:null};
+let S={answers:{},done:{},names:['',''],mode:'date',off:[],order:'sync',face:true,gentle:true,sound:true,speed:'mid',lang:null,tut:0,plan:{},memo:{},round:null};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch{}
 // 舊版用 groups 記開啟的大類，換算成關掉的細項
 if(S.groups){S.off=CATS.filter(c=>!S.groups.includes(c.g)).map(c=>c.id);delete S.groups}
@@ -1537,7 +1542,7 @@ function rHome(){
   const p=pool(),left=p.filter(q=>!S.answers[q.id]).length,W=wishes();
   const R=S.round,ON=o=>({sync:'同時翻牌',mix:'各滑各的',pass:'輪流滑'})[o];
   $('#home').innerHTML=`<div class="wrap home">
-  <div class="top-r">${standalone()?'':'<button class="link" data-act="a2hs">加到主畫面</button>'}<button class="link" data-act="tut">怎麼玩？</button></div>
+  <div class="top-r"><select id="lang" aria-label="語言">${LANGS.map(([k,n])=>`<option value="${k}" ${S.lang===k?'selected':''}>${n}</option>`).join('')}</select>${standalone()?'':'<button class="link" data-act="a2hs">加到主畫面</button>'}<button class="link" data-act="tut">怎麼玩？</button></div>
   <div class="hero${left?' go':''}" ${left?'role="button" tabindex="0" data-act="start" aria-label="剪票入場，開始一局"':''}><div class="tk notch"><div class="main"><div class="hero-k">ADMIT TWO・雙人入場券</div><h1>互動門票</h1><p>一起滑一滑，找出你們的共識。</p><small class="hero-fine">本票限兩人同行，期限內兌換。</small></div></div>
     <span class="stub">${left?`<b>剪票<br>入場</b><small>還有 ${left} 題</small>`:`<small>${p.length?'這個情境<br>都玩過了':'先到設定<br>選情境'}</small>`}</span></div>
   ${notice?`<p class="notice">${notice}</p>`:''}
@@ -1709,7 +1714,7 @@ function paintHalf(p){
     if(pk[0]!=null&&pk[1]!=null)body=reveal();
     else if(pk[f]!=null&&!cur.handed)body=`<div class="tkw down"><div class="tk t-void"><p class="q">交給${who2(s2)}</p><p class="meta" style="margin:.3em 0 0">${who2(f)}滑好了，把手機交給對方，別偷看喔。</p></div></div><button class="next" data-act="handoff">我是${who2(s2)}，開始</button>`;
     else body=swipeCard(t,q);
-    html=`<div class="who"><b>${pk[0]!=null&&pk[1]!=null?'一起看結果':who2(t)+' 的回合'}</b><span>${LVN[q.lv]}${bias?'・下一站：'+bias.t:''}</span></div>${body}`;
+    html=`<div class="who"><b>${pk[0]!=null&&pk[1]!=null?'一起看結果':who2(t)+' 的回合'}</b><span>${LVN[q.lv]}${bias?'・'+RT('next')+bias.t:''}</span></div>${body}`;
   }
   else{
     const q=cur.q,pk=cur.picks;
@@ -1717,7 +1722,7 @@ function paintHalf(p){
     if(pk[0]!=null&&pk[1]!=null)body=reveal();
     else if(pk[p]!=null)body=`<div class="tkw down">${ticket(q)}<span class="ink c-gray on">已剪票</span></div><button class="ic" data-act="unpick" data-p="${p}" aria-label="重選">↺</button>`;
     else body=swipeCard(p,q);
-    html=`<div class="who"><b>${nm(p)}</b><span>${LVN[q.lv]}${bias?'・下一站：'+bias.t:''}</span></div>${body}`;
+    html=`<div class="who"><b>${nm(p)}</b><span>${LVN[q.lv]}${bias?'・'+RT('next')+bias.t:''}</span></div>${body}`;
   }
   el.innerHTML=html;
   el.querySelectorAll('[data-card]').forEach(c=>bindCard(+c.dataset.card));
@@ -1744,15 +1749,21 @@ function choose(p,v){
     clearTimeout(advT);advT=setTimeout(()=>{if(view==='play'&&phase==='q')next()},autoMs());
   }else paintHalf(solo()?0:p);
 }
+// 方向卡的字是拼出來的（例如「聊」＋情境名），查表對不上，所以各語言直接給句型
+const RTX={zh:{next:'下一站：',soft:'輕鬆一點',softd:'回到輕鬆的題目',fate:'交給命運',fated:'不限方向，隨便抽',bold:'大膽一點',boldd:'接下來抽「{x}」題',talk:'聊{x}',talkd:'接下來都是「{x}」'},
+  en:{next:'Next stop: ',soft:'Keep it light',softd:'Back to easy cards',fate:'Leave it to fate',fated:'Any direction, totally random',bold:'Turn it up',boldd:'Next: {x} cards',talk:'Talk {x}',talkd:'Next: all {x}'},
+  ja:{next:'次の行き先：',soft:'ゆるめに',softd:'気軽なカードに戻る',fate:'運にまかせる',fated:'方向は決めず、ランダム',bold:'もっと大胆に',boldd:'次は「{x}」のカード',talk:'{x}の話',talkd:'次は全部「{x}」'},
+  ko:{next:'다음 행선지: ',soft:'가볍게',softd:'가벼운 카드로 돌아가기',fate:'운에 맡기기',fated:'방향 없이 랜덤으로',bold:'좀 더 과감하게',boldd:'다음은 「{x}」 카드',talk:'{x} 이야기',talkd:'다음은 전부 「{x}」'}};
+const RT=(k,x='')=>(RTX[S.lang]||RTX.zh)[k].replace('{x}',x);
 function routeOpts(){
   const ls=[...new Set(pool().map(q=>q.lv))].sort(),o=[];
   if(ls.length>1){
     const top=ls.at(-1);
-    o.push({t:'大膽一點',d:`接下來抽「${LVN[top]}」題`,lv:top,ty:top===3?'hk':'cc'});
-    if(ls[0]===1)o.push({t:'輕鬆一點',d:'回到輕鬆的題目',lv:1,ty:'am'});
+    o.push({t:RT('bold'),d:RT('boldd',tr(LVN[top])),lv:top,ty:top===3?'hk':'cc'});
+    if(ls[0]===1)o.push({t:RT('soft'),d:RT('softd'),lv:1,ty:'am'});
   }
-  shuffle(modeGroups().filter(g=>g.id!==bias?.g&&pool().some(q=>q.cat.g===g.id))).slice(0,2).forEach(g=>o.push({t:'聊'+g.name,d:`接下來都是「${g.name}」`,g:g.id,ty:TYPE[g.id]}));
-  return shuffle([...shuffle(o).slice(0,2),{t:'交給命運',d:'不限方向，隨便抽',ty:'pc'}]);
+  shuffle(modeGroups().filter(g=>g.id!==bias?.g&&pool().some(q=>q.cat.g===g.id))).slice(0,2).forEach(g=>o.push({t:RT('talk',g.name),d:RT('talkd',g.name),g:g.id,ty:TYPE[g.id]}));
+  return shuffle([...shuffle(o).slice(0,2),{t:RT('fate'),d:RT('fated'),ty:'pc'}]);
 }
 function next(){
   clearTimeout(advT);
@@ -1838,7 +1849,7 @@ function rList(){
   copied=false;
 }
 const gcal=(q,d)=>{const n=new Date(d+'T00:00:00');n.setDate(n.getDate()+1);return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(q.t)}&dates=${d.replace(/-/g,'')}/${n.getFullYear()}${pad(n.getMonth()+1)}${pad(n.getDate())}`};
-function listText(){return '我們說好要一起做的事\n'+wishes().map(([id])=>(S.done[id]?'☑ ':'☐ ')+QI[id].t).join('\n')}
+function listText(){return tr('我們說好要一起做的事')+'\n'+wishes().map(([id])=>(S.done[id]?'☑ ':'☐ ')+QI[id].t).join('\n')}
 function draw(ex){
   const base=pool().filter(q=>!S.answers[q.id]&&q.id!==ex);
   const fit=bias?base.filter(q=>(!bias.lv||q.lv===bias.lv)&&(!bias.g||q.cat.g===bias.g)):[];
@@ -1923,7 +1934,61 @@ document.addEventListener('change',e=>{
     if(t.value&&q.cat.g!=='hot'&&q.lv<3)box.insertAdjacentHTML('beforeend',`<a class="link" href="${gcal(q,t.value)}" target="_blank" rel="noopener">加到 Google 日曆</a>`);
   }
 });
-render();
+// ---------- 多語言：題目與分類在載入時替換；介面文字在畫到畫面上時查表替換（數字用 {n} 佔位） ----------
+const LANGS=[['zh','中文'],['en','EN'],['ja','日本語'],['ko','한국어']];
+if(!S.lang){const n=(navigator.language||'').toLowerCase();S.lang=n.startsWith('zh')?'zh':n.startsWith('ja')?'ja':n.startsWith('ko')?'ko':'en'}
+const DICT=()=>S.lang==='zh'?null:window.I18N?.[S.lang];
+const CJK=/[\u3400-\u9fff]/;
+function trOne(t,D){
+  const nums=t.match(/\d+/g)||[],k=t.replace(/\d+/g,'{n}'),hit=D.ui[k];
+  if(hit!=null){let i=0;return hit.replace(/\{n\}/g,()=>nums[i++]??'')}
+  return null;
+}
+function tr(t){
+  const D=DICT();
+  if(!D||!CJK.test(t))return t;
+  const full=trOne(t,D);
+  if(full!=null)return full;
+  // 有設名字時，先換回「對方／玩家一／玩家二」查表，再把名字放回去
+  for(const n of S.names.map(x=>(x||'').trim()).filter(Boolean))for(const sub of ['對方','玩家一','玩家二']){
+    if(!t.includes(n))continue;
+    const h=trOne(t.split(n).join(sub),D);
+    if(h!=null)return h.split(D.ui[sub]||sub).join(n);
+  }
+  // 「A・B・C」這類組合字，逐段翻
+  if(/[・｜]/.test(t))return t.split(/([・｜])/).map(x=>/[・｜]/.test(x)?(S.lang==='ja'?'・':' · '):CJK.test(x)?(trOne(x.trim(),D)??x):x).join('');
+  return t;
+}
+function trNode(root){
+  if(!DICT())return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
+  for(let n=root;n;n=w.nextNode()){
+    if(n.nodeType===3){
+      const pn=n.parentNode;
+      if(!pn||/SCRIPT|STYLE/.test(pn.nodeName)||pn.closest?.('#lang'))continue;
+      const v=n.nodeValue,t=v.trim();
+      if(t&&CJK.test(t)){const r=tr(t);if(r!==t)n.nodeValue=v.replace(t,r)}
+    }else if(n.nodeType===1&&!n.closest('#lang'))for(const a of ['aria-label','placeholder','title']){const v=n.getAttribute(a);if(v&&CJK.test(v))n.setAttribute(a,tr(v))}
+  }
+}
+new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')trNode(m.target);else m.addedNodes.forEach(trNode)}}).observe(document.body,{childList:true,subtree:true,characterData:true});
+function applyLang(){
+  const D=DICT();
+  for(const q of Q){q.zh??=q.t;q.t=D?.q[q.id]||q.zh}
+  for(const c of CATS){c.zh??=c.name;c.name=D?.c[c.id]||c.zh}
+  for(const g of GROUPS){g.zh??=g.name;g.name=D?.g[g.id]||g.zh}
+  document.documentElement.lang={zh:'zh-Hant',en:'en',ja:'ja',ko:'ko'}[S.lang];
+  document.title=D?.ui['互動門票']||'互動門票';
+}
+function loadLang(done){
+  if(S.lang==='zh'||window.I18N?.[S.lang])return done();
+  const sc=document.createElement('script');
+  sc.src=`i18n/${S.lang}.js`;sc.onload=done;sc.onerror=()=>{S.lang='zh';done()};
+  document.head.appendChild(sc);
+}
+document.addEventListener('change',e=>{if(e.target.id==='lang'){S.lang=e.target.value;save();loadLang(()=>{applyLang();render();trNode(document.body)})}});
+document.documentElement.classList.add('i18n-wait');
+loadLang(()=>{applyLang();render();trNode(document.body);document.documentElement.classList.remove('i18n-wait')});
 </script>
 </body>
 </html>
