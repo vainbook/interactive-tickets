@@ -222,6 +222,16 @@ h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .play.solo{grid-template-rows:auto 1fr}
 .play.solo #hB{display:none}
 .top-r{display:flex;justify-content:flex-end;gap:14px;margin-bottom:-14px}
+.a2-sub{margin:0;font-size:.88rem;color:var(--muted);line-height:1.6}
+.a2-home{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 14px 12px;border-radius:16px;background:linear-gradient(160deg,#6E7FA3,#34405E)}
+.a2-home span{display:flex;flex-direction:column;align-items:center;gap:5px}
+.a2-home i,.a2-home img{width:100%;max-width:54px;aspect-ratio:1;border-radius:23%}
+.a2-home .ph i{background:rgba(255,255,255,.22)}
+.a2-home .ph b{width:70%;height:6px;border-radius:3px;background:rgba(255,255,255,.25)}
+.a2-home .me img{box-shadow:0 4px 10px rgba(0,0,0,.3);animation:a2pop .5s .15s cubic-bezier(.2,1.6,.5,1) both}
+.a2-home .me b{font-size:.68rem;font-weight:500;color:#fff;white-space:nowrap}
+@keyframes a2pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.a2-home .me img{animation:none}}
 .a2-head{display:flex;gap:14px;align-items:center}
 .a2-head img{border-radius:13px;flex:none}
 .a2-head h2{font-size:1.25rem}
@@ -1648,7 +1658,8 @@ function openA2hs(){
   else if(ios)steps=`<ol><li>點 Safari 下方的分享按鈕 ${SHARE_ICON}</li><li>往下滑，選「加入主畫面」</li><li>按右上角的「加入」</li></ol>`;
   else if(android)steps='<ol><li>點 Chrome 右上角的「⋮」選單</li><li>選「加到主畫面」或「安裝應用程式」</li></ol>';
   else steps='<p>用手機打開這個網址，就能把互動門票加到主畫面。</p>';
-  $('#tut').innerHTML=`<div class="tut-card a2"><div class="a2-head"><img src="apple-touch-icon.png" alt="" width="56" height="56"><div><h2>加到主畫面</h2><p>像 App 一樣，一點就開，沒有網址列。</p></div></div>${steps}<div class="tut-act"><span></span><button class="link" data-act="tutdone">知道了</button></div></div>`;
+  $('#tut').innerHTML=`<div class="tut-card a2"><h2>加到主畫面</h2><p class="a2-sub">加好之後，手機桌面會多一個這樣的圖示，一點就開，沒有網址列。</p>
+    <div class="a2-home" aria-label="加入後的主畫面示意"><span class="ph"><i></i><b></b></span><span class="ph"><i></i><b></b></span><span class="me"><img src="apple-touch-icon.png" alt="互動門票圖示"><b>互動門票</b></span><span class="ph"><i></i><b></b></span></div>${steps}<div class="tut-act"><span></span><button class="link" data-act="tutdone">知道了</button></div></div>`;
   $('#tut').hidden=false;tutThen=null;
 }
 function startRound(){newRound();S.order==='mix'?startMix():draw()}
