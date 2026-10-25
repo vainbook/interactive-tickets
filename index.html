@@ -264,6 +264,12 @@ html:not([lang^=zh]) .mode b{font-size:.86rem;overflow-wrap:anywhere;hyphens:aut
 .net-link{margin:0;font-family:var(--mono);font-size:.72rem;color:var(--muted);word-break:break-all;text-align:center}
 .net-wait{text-align:center;animation:netpulse 1.6s ease-in-out infinite}
 @keyframes netpulse{50%{opacity:.4}}
+.net-err b{display:block;margin-bottom:4px}
+.net-err p{margin:0 0 8px;font-size:.88rem}
+.net-err .lab{margin:0 0 2px}
+.net-err ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px;font-size:.88rem;line-height:1.55}
+.errc{display:block;margin-top:8px;font-size:.72rem;color:var(--muted)}
+.net-tip{margin:0;text-align:center;font-size:.8rem;color:#8A5A00;background:#FFF1D2;border-radius:10px;padding:8px 10px}
 .net-ok{margin:0;text-align:center;font-family:var(--display);font-size:1.6rem;color:var(--ok)}
 .net-join{display:grid;grid-template-columns:1fr auto;gap:10px}
 .net-join input{font:inherit;font-family:var(--mono);font-size:1.2rem;letter-spacing:.2em;text-align:center;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--fg);min-width:0}
@@ -1877,10 +1883,20 @@ const FAIL_NET='連不上對方。可能是網路擋住了直接連線，試試�
 function loadPeer(cb){
   if(window.Peer)return cb();
   const sc=document.createElement('script');
-  sc.src='https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=cb;sc.onerror=()=>netFail('載入連線工具失敗，確認網路後再試一次。');
+  sc.src='https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=cb;sc.onerror=()=>netFail('載入連線工具失敗，確認網路後再試一次。','load');
   document.head.appendChild(sc);
 }
 const SVC_DOWN='連線服務暫時連不上，稍後再試一次。';
+// 每種錯誤：白話的原因＋使用者自己能試的做法
+const OPEN_IN_BROWSER='兩個人都改用 Safari 或 Chrome 打開，不要在 Threads、LINE、IG 裡面開';
+const NET_HELP={
+  timeout:{why:'兩支手機找到了對方，但網路擋住了直接連線。部分行動網路、公司或學校的 WiFi 常會這樣。',fix:['請其中一人換一種網路：改連 WiFi，或改用行動網路／手機熱點，再重新開房',OPEN_IN_BROWSER,'還是不行的話，可以先用「輪流滑」或「同時翻牌」一起玩']},
+  network:{why:'連不上配對服務，可能是網路不穩，或服務暫時忙碌。',fix:['確認網路正常後，按返回再試一次','過幾分鐘再試']},
+  'peer-unavailable':{why:'等了一分鐘還是找不到這個房間：房號可能打錯了，或房主離開了遊戲畫面。',fix:['確認房號沒有打錯','請房主回到遊戲畫面、保持螢幕亮著，必要時重新開房']},
+  'browser-incompatible':{why:'這個瀏覽器不支援連線功能。',fix:[OPEN_IN_BROWSER]},
+  load:{why:'連線工具下載失敗。',fix:['確認網路正常','如果有開廣告攔截或省流量模式，先關掉再試']}
+};
+NET_HELP.ice=NET_HELP.timeout;NET_HELP['server-error']=NET_HELP['socket-error']=NET_HELP.network;
 function netHost(){
   NET.stage='wait';NET.err='';NET.code='';rNet();
   loadPeer(()=>{
@@ -1893,7 +1909,7 @@ function netHost(){
     peer.on('error',e=>{
       if(e.type==='unavailable-id'){peer.destroy();netHost()}
       else if(/network|server-error|socket-error|disconnected/.test(e.type)){if(!NET.code)netFail(SVC_DOWN,e.type)}
-      else netFail(FAIL_NET,e.type);
+      else netFail(e.type==='browser-incompatible'?'這個瀏覽器不能用遠距連線。':FAIL_NET,e.type);
     });
   });
 }
@@ -1906,7 +1922,7 @@ function netJoin(code,tries=0){
     peer.on('error',e=>{
       // 找不到房間時先不放棄：房主可能正在切換 App，每 3 秒重試，最多約一分鐘
       if(e.type==='peer-unavailable'&&tries<20&&NET.stage==='joining'){clearTimeout(NET.to);try{peer.destroy()}catch{}NET.retryT=setTimeout(()=>{if(NET.stage==='joining')netJoin(code,tries+1)},3000);return}
-      netFail(e.type==='peer-unavailable'?'找不到這個房號，確認一下再試一次。':/network|server-error|socket-error/.test(e.type)?SVC_DOWN:FAIL_NET,e.type);
+      netFail(e.type==='peer-unavailable'?'找不到這個房號，確認一下再試一次。':/network|server-error|socket-error/.test(e.type)?SVC_DOWN:e.type==='browser-incompatible'?'這個瀏覽器不能用遠距連線。':FAIL_NET,e.type);
     });
   });
 }
@@ -1953,19 +1969,23 @@ function netFail(msg,code=''){
   Object.assign(NET,{on:false,peer:null,conn:null,stage:'menu',err:msg,errc:code});
   if(view==='net')rNet();
 }
+function netErrHtml(){
+  const h=NET_HELP[NET.errc];
+  return `<div class="notice net-err"><b>${NET.err}</b>${h?`<p>${h.why}</p><span class="lab">可以試試看</span><ol>${h.fix.map(f=>`<li>${f}</li>`).join('')}</ol>`:''}${NET.errc?`<small class="errc"><span>錯誤代碼</span> <span class="nolang">${NET.errc}</span></small>`:''}</div>`;
+}
 function openNet(code){NET.stage='menu';NET.err='';show('net');if(code)netJoin(code)}
 function rNet(){
   let body;
   if(NET.stage==='ready')body=NET.host?'<p class="net-ok">已連線！</p><button class="go" data-act="netstart">開始</button>':'<p class="net-ok">已連線！</p><p class="meta">等房主開始…</p>';
   else if(NET.stage==='wait'&&NET.code)body=`<div class="net-box"><span class="lab">房號</span><p class="net-code">${NET.code}</p><p class="meta">把房號或連結傳給對方</p></div>
     <div class="row2"><button class="ghost" data-act="netshare">分享連結</button><button class="ghost" data-act="netcopy">${copied?'已複製':'複製連結'}</button></div>
-    <p class="net-link">${netLink()}</p><p class="meta net-wait">等待對方加入…</p>`;
+    <p class="net-link">${netLink()}</p><p class="meta net-wait">等待對方加入…</p><p class="net-tip">傳完連結記得回到這個畫面，房間才會一直開著</p>`;
   else if(NET.stage==='joining'&&NET.tries)body='<p class="meta net-wait">房主可能正在切換 App，持續重試中…</p><button class="ghost" data-act="netback">取消</button>';
   else if(NET.stage==='wait'||NET.stage==='joining')body='<p class="meta net-wait">連線中…</p>';
   else body=`<button class="go" data-act="nethost">開房間</button>
     <div class="net-join"><input id="netcode" inputmode="numeric" maxlength="4" placeholder="輸入 4 位數房號" aria-label="輸入 4 位數房號"><button class="ghost" data-act="netjoin">加入房間</button></div>`;
   $('#net').innerHTML=`<div class="wrap"><header class="bar-h"><button class="back" data-act="netback">‹ 返回</button><h2>遠距連線</h2></header>
-    <p class="meta" style="margin:0">兩支手機各自打開，用房號連線一起玩。答案只在兩支手機之間傳送。</p>${NET.err?`<p class="notice">${NET.err}${NET.errc?`<small class="nolang errc"> (${NET.errc})</small>`:''}</p>`:''}${body}</div>`;
+    <p class="meta" style="margin:0">兩支手機各自打開，用房號連線一起玩。答案只在兩支手機之間傳送。</p>${NET.err?netErrHtml():''}${body}</div>`;
   copied=false;
 }
 function startRound(){newRound();S.order==='mix'?startMix():draw()}
