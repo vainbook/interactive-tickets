@@ -270,6 +270,22 @@ html:not([lang^=zh]) .mode b{font-size:.86rem;overflow-wrap:anywhere;hyphens:aut
 .net-err ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px;font-size:.88rem;line-height:1.55}
 .errc{display:block;margin-top:8px;font-size:.72rem;color:var(--muted)}
 .net-tip{margin:0;text-align:center;font-size:.8rem;color:#8A5A00;background:#FFF1D2;border-radius:10px;padding:8px 10px}
+.go{display:block;width:100%;padding:14px;border-radius:14px;background:#C8352B;color:#FFF4E4;font-family:var(--display);font-size:1.3rem;box-shadow:0 10px 18px -12px rgba(200,53,43,.9)}
+.go:active{transform:translateY(1px)}
+.nt{display:flex;width:100%;padding:0;font-size:16px;text-align:left;color:#FFF4E4;filter:drop-shadow(0 12px 14px rgba(0,0,0,.2));transform:rotate(-1.2deg);transition:transform .15s}
+.nt:active{transform:rotate(-1.2deg) scale(.98)}
+.nt .tk{flex:1;min-width:0;display:flex;--t-bg:#C8352B;--t-fg:#FFF4E4;--nx:0px;border-radius:12px 0 0 12px;min-height:0}
+.nt .main{gap:.25em;padding:1.05em 1.1em 1.1em 1.25em}
+.nt .k{font-family:var(--mono);font-size:.66em;letter-spacing:.2em;color:#FFD9A8}
+.nt b{font-family:var(--display);font-weight:400;font-size:2.1em;line-height:1.1}
+.nt small{font-size:.84em;opacity:.92}
+.nt>.stub{width:4.4em;border-left:2px dashed rgba(200,53,43,.45);background:#FFF4E4;color:#C8352B;border-radius:0 12px 12px 0;-webkit-mask:radial-gradient(circle at 0 0,#0000 .6em,#000 calc(.6em + .5px)) top/100% 51% no-repeat,radial-gradient(circle at 0 100%,#0000 .6em,#000 calc(.6em + .5px)) bottom/100% 51% no-repeat;mask:radial-gradient(circle at 0 0,#0000 .6em,#000 calc(.6em + .5px)) top/100% 51% no-repeat,radial-gradient(circle at 0 100%,#0000 .6em,#000 calc(.6em + .5px)) bottom/100% 51% no-repeat}
+.nt .pl{font-size:2em;line-height:1;transform:rotate(-20deg)}
+.net-or{display:flex;align-items:center;gap:12px;margin:2px 0;color:var(--muted);font-size:.82rem}
+.net-or::before,.net-or::after{content:"";flex:1;border-top:1px dashed color-mix(in srgb,var(--line) 35%,transparent)}
+.net-join-card{padding:14px;border-radius:14px;border:1.5px dashed color-mix(in srgb,var(--line) 45%,transparent);background:var(--card)}
+.net-join input::placeholder{letter-spacing:.04em;font-family:var(--body);font-size:.85rem}
+.join-btn{padding:0 16px;border-radius:12px;background:var(--fg);color:var(--desk);font-weight:500;white-space:nowrap}
 .net-ok{margin:0;text-align:center;font-family:var(--display);font-size:1.6rem;color:var(--ok)}
 .net-join{display:grid;grid-template-columns:1fr auto;gap:10px}
 .net-join input{font:inherit;font-family:var(--mono);font-size:1.2rem;letter-spacing:.2em;text-align:center;padding:10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--fg);min-width:0}
@@ -1982,8 +1998,9 @@ function rNet(){
     <p class="net-link">${netLink()}</p><p class="meta net-wait">等待對方加入…</p><p class="net-tip">傳完連結記得回到這個畫面，房間才會一直開著</p>`;
   else if(NET.stage==='joining'&&NET.tries)body='<p class="meta net-wait">房主可能正在切換 App，持續重試中…</p><button class="ghost" data-act="netback">取消</button>';
   else if(NET.stage==='wait'||NET.stage==='joining')body='<p class="meta net-wait">連線中…</p>';
-  else body=`<button class="go" data-act="nethost">開房間</button>
-    <div class="net-join"><input id="netcode" inputmode="numeric" maxlength="4" placeholder="輸入 4 位數房號" aria-label="輸入 4 位數房號"><button class="ghost" data-act="netjoin">加入房間</button></div>`;
+  else body=`<button class="nt" data-act="nethost"><span class="tk notch"><span class="main"><span class="k">ADMIT TWO・我來開房</span><b>開房間</b><small>拿到房號，把連結傳給對方</small></span></span><span class="stub"><span class="pl">✈</span></span></button>
+    <p class="net-or"><span>或是</span></p>
+    <div class="net-join-card"><span class="lab">對方已經開好房間了？</span><div class="net-join"><input id="netcode" inputmode="numeric" maxlength="4" placeholder="輸入 4 位數房號" aria-label="輸入 4 位數房號"><button class="join-btn" data-act="netjoin">加入房間</button></div></div>`;
   $('#net').innerHTML=`<div class="wrap"><header class="bar-h"><button class="back" data-act="netback">‹ 返回</button><h2>遠距連線</h2></header>
     <p class="meta" style="margin:0">兩支手機各自打開，用房號連線一起玩。答案只在兩支手機之間傳送。</p>${NET.err?netErrHtml():''}${body}</div>`;
   copied=false;
