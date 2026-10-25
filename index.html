@@ -1880,27 +1880,41 @@ function loadPeer(cb){
   sc.src='https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=cb;sc.onerror=()=>netFail('載入連線工具失敗，確認網路後再試一次。');
   document.head.appendChild(sc);
 }
+const SVC_DOWN='連線服務暫時連不上，稍後再試一次。';
 function netHost(){
   NET.stage='wait';NET.err='';NET.code='';rNet();
   loadPeer(()=>{
     const code=String(1000+Math.random()*9000|0),peer=new Peer(PID(code));NET.peer=peer;
     peer.on('open',()=>{NET.code=code;NET.host=true;rNet()});
-    peer.on('connection',c=>{if(NET.conn){c.close();return}netWire(c)});
-    peer.on('error',e=>{if(e.type==='unavailable-id'){peer.destroy();netHost()}else netFail(e.type==='network'||e.type==='server-error'||e.type==='socket-error'?'連線服務暫時連不上，稍後再試一次。':FAIL_NET)});
+    // 舊的那條還沒真正連上就換掉，不然第一次失敗後會一直拒絕對方重試
+    peer.on('connection',c=>{if(NET.conn?.open){c.close();return}try{NET.conn?.close()}catch{}netWire(c)});
+    // 房主切去 LINE 傳連結時，瀏覽器會暫停網頁，配對服務的連線就斷了；能重連就自動重連
+    peer.on('disconnected',()=>{if(!peer.destroyed)setTimeout(()=>{try{peer.reconnect()}catch{}},500)});
+    peer.on('error',e=>{
+      if(e.type==='unavailable-id'){peer.destroy();netHost()}
+      else if(/network|server-error|socket-error|disconnected/.test(e.type)){if(!NET.code)netFail(SVC_DOWN,e.type)}
+      else netFail(FAIL_NET,e.type);
+    });
   });
 }
-function netJoin(code){
-  NET.stage='joining';NET.err='';NET.code=code;NET.host=false;rNet();
+document.addEventListener('visibilitychange',()=>{const pr=NET.peer;if(document.visibilityState==='visible'&&pr&&pr.disconnected&&!pr.destroyed){try{pr.reconnect()}catch{}}});
+function netJoin(code,tries=0){
+  NET.stage='joining';NET.err='';NET.code=code;NET.host=false;NET.tries=tries;rNet();
   loadPeer(()=>{
     const peer=new Peer();NET.peer=peer;
-    peer.on('open',()=>{netWire(peer.connect(PID(code),{reliable:true}));NET.to=setTimeout(()=>{if(!NET.on)netFail(FAIL_NET)},15000)});
-    peer.on('error',e=>netFail(e.type==='peer-unavailable'?'找不到這個房號，確認一下再試一次。':e.type==='network'||e.type==='server-error'?'連線服務暫時連不上，稍後再試一次。':FAIL_NET));
+    peer.on('open',()=>{netWire(peer.connect(PID(code),{reliable:true}));clearTimeout(NET.to);NET.to=setTimeout(()=>{if(!NET.on)netFail(FAIL_NET,'timeout')},20000)});
+    peer.on('error',e=>{
+      // 找不到房間時先不放棄：房主可能正在切換 App，每 3 秒重試，最多約一分鐘
+      if(e.type==='peer-unavailable'&&tries<20&&NET.stage==='joining'){clearTimeout(NET.to);try{peer.destroy()}catch{}NET.retryT=setTimeout(()=>{if(NET.stage==='joining')netJoin(code,tries+1)},3000);return}
+      netFail(e.type==='peer-unavailable'?'找不到這個房號，確認一下再試一次。':/network|server-error|socket-error/.test(e.type)?SVC_DOWN:FAIL_NET,e.type);
+    });
   });
 }
 function netWire(c){
   NET.conn=c;
   c.on('open',()=>{clearTimeout(NET.to);NET.on=true;NET.stage='ready';sfx('stamp');if(view==='net')rNet()});
   c.on('data',netMsg);
+  c.on('error',()=>{if(!NET.on&&!NET.host)netFail(FAIL_NET,'ice')});
   c.on('close',()=>{if(NET.on){netLeave(false);notice='連線中斷了';show('home')}});
 }
 function netMsg(m){
@@ -1929,13 +1943,14 @@ function netApply(m){
   if(view!=='play')show('play');else rPlay();
 }
 function netLeave(tell){
+  clearTimeout(NET.retryT);
   if(tell)netSend({t:'bye'});
   const pr=NET.peer;setTimeout(()=>{try{pr?.destroy()}catch{}},tell?300:0);
   clearTimeout(NET.to);Object.assign(NET,{on:false,host:false,peer:null,conn:null,code:'',stage:'menu',otherDone:false,rev:false,lastRev:null});
 }
-function netFail(msg){
-  clearTimeout(NET.to);try{NET.peer?.destroy()}catch{}
-  Object.assign(NET,{on:false,peer:null,conn:null,stage:'menu',err:msg});
+function netFail(msg,code=''){
+  clearTimeout(NET.to);clearTimeout(NET.retryT);try{NET.peer?.destroy()}catch{}
+  Object.assign(NET,{on:false,peer:null,conn:null,stage:'menu',err:msg,errc:code});
   if(view==='net')rNet();
 }
 function openNet(code){NET.stage='menu';NET.err='';show('net');if(code)netJoin(code)}
@@ -1945,11 +1960,12 @@ function rNet(){
   else if(NET.stage==='wait'&&NET.code)body=`<div class="net-box"><span class="lab">房號</span><p class="net-code">${NET.code}</p><p class="meta">把房號或連結傳給對方</p></div>
     <div class="row2"><button class="ghost" data-act="netshare">分享連結</button><button class="ghost" data-act="netcopy">${copied?'已複製':'複製連結'}</button></div>
     <p class="net-link">${netLink()}</p><p class="meta net-wait">等待對方加入…</p>`;
+  else if(NET.stage==='joining'&&NET.tries)body='<p class="meta net-wait">房主可能正在切換 App，持續重試中…</p><button class="ghost" data-act="netback">取消</button>';
   else if(NET.stage==='wait'||NET.stage==='joining')body='<p class="meta net-wait">連線中…</p>';
   else body=`<button class="go" data-act="nethost">開房間</button>
     <div class="net-join"><input id="netcode" inputmode="numeric" maxlength="4" placeholder="輸入 4 位數房號" aria-label="輸入 4 位數房號"><button class="ghost" data-act="netjoin">加入房間</button></div>`;
   $('#net').innerHTML=`<div class="wrap"><header class="bar-h"><button class="back" data-act="netback">‹ 返回</button><h2>遠距連線</h2></header>
-    <p class="meta" style="margin:0">兩支手機各自打開，用房號連線一起玩。答案只在兩支手機之間傳送。</p>${NET.err?`<p class="notice">${NET.err}</p>`:''}${body}</div>`;
+    <p class="meta" style="margin:0">兩支手機各自打開，用房號連線一起玩。答案只在兩支手機之間傳送。</p>${NET.err?`<p class="notice">${NET.err}${NET.errc?`<small class="nolang errc"> (${NET.errc})</small>`:''}</p>`:''}${body}</div>`;
   copied=false;
 }
 function startRound(){newRound();S.order==='mix'?startMix():draw()}
