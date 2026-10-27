@@ -326,6 +326,13 @@ html[lang=ja] .hero h1{font-size:1.7em;white-space:nowrap}
 .li .chk input{width:22px;height:22px}
 .lf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .lf select{min-width:0;font:inherit;font-size:.82rem;color:var(--fg);background:var(--card);border:1.5px solid color-mix(in srgb,var(--line) 40%,transparent);border-radius:10px;padding:7px 8px}
+.move{display:flex;flex-direction:column;gap:10px;padding-top:6px;border-top:1.5px dashed color-mix(in srgb,var(--line) 30%,transparent)}
+.move .lab{margin:0}
+.move .meta{margin:0}
+.move-box{display:flex;flex-direction:column;gap:10px}
+.move-box textarea{font-family:var(--mono);font-size:.72rem;min-height:0}
+.file-btn{cursor:pointer;text-align:center}
+.ghost.dark{background:var(--fg);color:var(--desk);border-color:var(--fg)}
 .tip{margin:0;padding:10px 14px;border-radius:10px;background:var(--card);border:1.5px dashed color-mix(in srgb,var(--line) 45%,transparent);font-size:.85rem;color:var(--muted)}
 .sec{margin:0;padding:14px 0 4px;font-size:.75rem;letter-spacing:.14em;color:var(--muted);border-top:1.5px dashed color-mix(in srgb,var(--line) 40%,transparent)}
 .li.using .qt{text-decoration:line-through;color:var(--muted)}
@@ -2199,10 +2206,40 @@ function rList(){
   <div class="sheet">${body}</div>
   ${tab==='wish'&&W.length?`<button class="ghost" data-act="copy">${copied?'已複製':'複製清單文字'}</button>`:''}
   <div id="copyBox"></div>
+  <section class="move"><span class="lab">備份與搬家</span><p class="meta">紀錄只存在這個瀏覽器。改用「加到主畫面」或換手機時，先在原本的地方匯出，再到新的地方匯入。</p>
+    <div class="row2"><button class="ghost" data-act="exp">匯出紀錄</button><button class="ghost" data-act="imp">匯入紀錄</button></div>
+    ${movePanel==='exp'?`<div class="move-box"><textarea id="expTa" readonly rows="6"></textarea><div class="row2"><button class="ghost" data-act="expcopy">${copied?'已複製':'複製文字'}</button><button class="ghost" data-act="expfile">下載文字檔</button></div></div>`:''}
+    ${movePanel==='imp'?`<div class="move-box"><textarea id="impTa" rows="5" placeholder="把匯出的整段文字貼在這裡"></textarea><div class="row2"><label class="ghost file-btn">選擇文字檔<input type="file" id="impFile" accept=".txt,text/plain" hidden></label><button class="ghost dark" data-act="impgo">匯入</button></div></div>`:''}
+    ${moveMsg?`<p class="notice">${moveMsg}</p>`:''}</section>
   <button class="ghost danger" data-act="clear">${confirmClear?'再按一次，清除所有紀錄':'清除所有紀錄'}</button></div>`;
+  if(movePanel==='exp')$('#expTa').value=exportText();
   copied=false;
 }
 const gcal=(q,d)=>{const n=new Date(d+'T00:00:00');n.setDate(n.getDate()+1);return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(q.t)}&dates=${d.replace(/-/g,'')}/${n.getFullYear()}${pad(n.getMonth()+1)}${pad(n.getDate())}`};
+// 備份與搬家：一段純文字，上半是看得懂的清單，最後一行 DATA: 是資料（base64 的 JSON）
+let movePanel='',moveMsg='';
+function exportText(){
+  const d={v:1,answers:S.answers,done:S.done,plan:S.plan,memo:S.memo,names:S.names};
+  return [tr('互動門票紀錄'),`${tr('說好的事')}：${wishes().length}`,'',...wishes().map(([id])=>'・'+QI[id].t),'',tr('（下面這行是資料，請整段保留）'),'DATA:'+btoa(unescape(encodeURIComponent(JSON.stringify(d))))].join('\n');
+}
+function importText(t){
+  const m=(t||'').match(/DATA:([A-Za-z0-9+/=\s]+)/);
+  if(!m)return -1;
+  let d;try{d=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/\s/g,'')))))}catch{return -1}
+  if(!d||typeof d.answers!=='object')return -1;
+  const before=known().length;
+  // 合併：匯入的補上缺的，這裡已經有的不覆蓋
+  S.answers={...d.answers,...S.answers};S.done={...d.done,...S.done};S.plan={...d.plan,...S.plan};S.memo={...d.memo,...S.memo};
+  if(!S.names.some(Boolean)&&Array.isArray(d.names))S.names=d.names;
+  save();
+  return known().length-before;
+}
+function doImport(t){
+  const n=importText(t);
+  moveMsg=n<0?tr('看不懂這段文字。請把匯出的內容整段貼上，包含最後的 DATA 那一行。'):tr('匯入完成，新增了 '+n+' 題紀錄。');
+  if(n>=0)movePanel='';
+  render();
+}
 function listText(){return tr('我們說好要一起做的事')+'\n'+wishes().map(([id])=>(S.done[id]?'☑ ':'☐ ')+QI[id].t).join('\n')}
 function draw(ex){
   const base=pool().filter(q=>!S.answers[q.id]&&q.id!==ex);
@@ -2230,7 +2267,7 @@ document.addEventListener('click',e=>{
   else if(act==='netshare'){const u=netLink();navigator.share?navigator.share({title:document.title,url:u}).catch(()=>{}):navigator.clipboard.writeText(u).then(()=>{copied=true;rNet()}).catch(()=>{})}
   else if(act==='netcopy')navigator.clipboard.writeText(netLink()).then(()=>{copied=true;rNet()}).catch(()=>{});
   else if(act==='bank')show('bank');
-  else if(act==='list'){tab='wish';show('list')}
+  else if(act==='list'){tab='wish';movePanel='';moveMsg='';show('list')}
   else if(act==='talklist'){tab='talk';show('list')}
   else if(act==='mode'){S.mode=v;save();render()}
   else if(act==='grp'){const ids=modeCats(GROUPS.find(g=>g.id===v)).map(c=>c.id),allOn=ids.every(i=>!S.off.includes(i));S.off=allOn?[...new Set([...S.off,...ids])]:S.off.filter(i=>!ids.includes(i));save();render()}
@@ -2262,6 +2299,10 @@ document.addEventListener('click',e=>{
   else if(act==='pick')choose(+p,+v);
   else if(act==='unpick'){cur.picks[+p]=null;paintHalf(+p)}
   else if(act==='tab'){tab=v;render()}
+  else if(act==='exp'||act==='imp'){movePanel=movePanel===act?'':act;moveMsg='';render()}
+  else if(act==='expcopy'){const ta=$('#expTa');navigator.clipboard.writeText(ta.value).then(()=>{copied=true;render()}).catch(()=>{ta.focus();ta.select()})}
+  else if(act==='expfile'){const u=URL.createObjectURL(new Blob([exportText()],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download='interactive-tickets-backup.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+  else if(act==='impgo')doImport($('#impTa').value);
   else if(act==='copy'){
     const txt=listText();
     navigator.clipboard.writeText(txt).then(()=>{copied=true;render()}).catch(()=>{$('#copyBox').innerHTML='<textarea id="copyTa" readonly></textarea>';const ta=$('#copyTa');ta.value=txt;ta.select()});
@@ -2280,6 +2321,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.opt){S[t.dataset.opt]=t.checked;save()}
+  if(t.id==='impFile'&&t.files[0]){const r=new FileReader();r.onload=()=>doImport(r.result);r.readAsText(t.files[0])}
   if(t.dataset.lf){LF[t.dataset.lf]=t.value;render()}
   if(t.dataset.done){
     const id=t.dataset.done;
